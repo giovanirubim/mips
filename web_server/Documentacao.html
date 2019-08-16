@@ -1,0 +1,49 @@
+<meta charset="utf-8">
+<style type="text/css">
+	body {
+		max-width: 800px;
+		margin: 40px auto;
+		font-size: 20px;
+		font-family: monospace;
+		background-color: #ddd;
+	}
+	p {
+		margin-left: 20px;
+	}
+</style>
+<div id="Conductor">
+	<h3>Conductor</h3>
+	<p>
+		Um objeto Conductor deve ser associado a uma árvore de elementos condutores que estão conectados. O objeto Conductor contém a quantidade de bits que são transmitidos neste meio e o valor atual contido. Uma árvore de elementos condutores que não está conectada a nenhuma saída (<a href="#OuterIOPoint">OuterIOPoint</a>) de um componente atômico não possuirá um objeto Conductor associado.
+	</p>
+</div>
+<div id="Point">
+	<h3>Point</h3>
+	<p>
+		Ponto condutor. Pode se conectar a outros objetos Point através de um objeto <a href="#Wire">Wire</a>.
+	</p>
+</div>
+<div id="Wire">
+	<h3>Wire</h3>
+	<p>
+		Representa um fio que conecta dois objetos <a href="#Point">Point</a>.
+	</p>
+</div>
+<div id="IOPoint">
+	<h3>IOPoint</h3>
+	<p>
+		Herda da classe <a href="#Point">Point</a>, classe abstrata representa um ponto de entrada ou saída. Possue o atributo type que podem assumir os valores "input" e "output".
+	</p>
+</div>
+<div id="InnerIOPoint">
+	<h3>InnerIOPoint</h3>
+	<p>
+		Entrada/saída interna de um componente. Fica solta no circuito. Os objetos InnerIOPoint se conectam com os objeto OuterIOPoint por fios (<a href="#Wire">Wire</a>) não renderizáveis do componente.
+	</p>
+</div>
+<div id="OuterIOPoint">
+	<h3>OuterIOPoint</h3>
+	<p>
+		Entrada/saída de um componente. No caso de ser um componente composto (*ComposedComponent) cada objeto OuterIOPoint se conectará a um <a href="#InnerIOPoint">InnerIOPoint</a> por fios (<a href="#Wire">Wire</a>) não renderizáveis.
+	</p>
+</div>

@@ -1,0 +1,11 @@
+# Conductor: Um objeto Conductor deve ser associado a uma árvore de elementos condutores que estão conectados. O objeto Conductor contém a quantidade de bits que são transmitidos neste meio e o valor atual contido. Uma árvore de elementos condutores que não está conectada a nenhuma saída (*OuterIOPoint) de um componente atômico não possuirá um objeto Conductor associado.
+
+# Point: Ponto condutor. Pode se conectar a outros objetos Point através de um objeto *Wire.
+
+# Wire: Representa um fio que conecta dois objetos *Point.
+
+# IOPoint: Herda da classe *Point, classe abstrata representa um ponto de entrada ou saída. Possue o atributo type que podem assumir os valores "input" e "output".
+
+# InnerIOPoint: Entrada/saída interna de um componente. Fica solta no circuito. Os objetos InnerIOPoint se conectam com os objeto OuterIOPoint por fios (*Wire) não renderizáveis do componente.
+
+# OuterIOPoint: Entrada/saída de um componente. No caso de ser um componente composto (*ComposedComponent) cada objeto OuterIOPoint se conectará a um *InnerIOPoint por fios (*Wire) não renderizáveis.
