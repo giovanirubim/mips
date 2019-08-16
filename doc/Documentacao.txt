@@ -1,4 +1,4 @@
-# Conductor: Um objeto Conductor deve ser associado a uma árvore de elementos condutores que estão conectados. O objeto Conductor contém a quantidade de bits que são transmitidos neste meio e o valor atual contido. Uma árvore de elementos condutores que não está conectada a nenhuma saída (*OuterIOPoint) de um componente atômico não possuirá um objeto Conductor associado.
+# Conductor: Um objeto Conductor deve ser associado a uma árvore de elementos condutores que estão conectados (ver *conductive_tree). O objeto Conductor contém a quantidade de bits que são transmitidos neste meio e o valor atual contido. Uma árvore de elementos condutores que não está conectada a nenhuma saída (*OuterIOPoint) de um componente atômico não possuirá um objeto Conductor associado. Um condutor pode refernciar parte (4 bytes) de um *Workspace, se for o caso essa região referenciada pelo Conductor deve necessariamente ser o Conductor de 
 
 # Point: Ponto condutor. Pode se conectar a outros objetos Point através de um objeto *Wire.
 
@@ -6,6 +6,20 @@
 
 # IOPoint: Herda da classe *Point, classe abstrata representa um ponto de entrada ou saída. Possue o atributo type que podem assumir os valores "input" e "output".
 
-# InnerIOPoint: Entrada/saída interna de um componente. Fica solta no circuito. Os objetos InnerIOPoint se conectam com os objeto OuterIOPoint por fios (*Wire) não renderizáveis do componente.
+# InnerIOPoint: Herda de *IOPoint. Entrada/saída interna de um componente. Fica solta no circuito. Os objetos InnerIOPoint se conectam com os objeto *OuterIOPoint por fios (*Wire) não renderizáveis do componente.
 
-# OuterIOPoint: Entrada/saída de um componente. No caso de ser um componente composto (*ComposedComponent) cada objeto OuterIOPoint se conectará a um *InnerIOPoint por fios (*Wire) não renderizáveis.
+# OuterIOPoint: Herda de *IOPoint. Entrada/saída de um componente. No caso de ser um componente composto (*ComposedComponent) cada objeto OuterIOPoint se conectará a um *InnerIOPoint por fios (*Wire) não renderizáveis. Um OuterIOPoint do tipo "output" que recebe um *Conductor em sua instanciação é considerada uma saída fonte (possui a flag isSource ativada) pois seu condutor jamais deve ser substituído, apenas propagado pelas árvores de condução (*conductive_tree). Isto deve ser uma exclusividade de objetos OuterIOPoint do tipo "output" e de componentes atômicos, pois a fonte de informação de um OuterIOPoint do tipo "output" de um componente composto (*ComposedComponent) é derivada de seu circuito interno.
+
+# Component: Classe abstrata que representa um componente eletrônico podendo ser atômico ou composto.
+
+# Circuit: Um circuito representa a estrutura interna de um componente, 
+
+# Ciclo: O ciclo de um componente é o processo que faz com que o componente avance um instante no tempo. É dividido em duas partes: A leitura de entradas (*readInputs) e o *tic. Para que o fluxo de informação possua uma velocidade global independente da organização do circuito, cada circuito realiza primeiro a leitura das entradas de todos os componentes e depois realizam suas ações lógicas, impedindo que a mudança de saída de um componente afete a entrada de outro componente dentro do mesmo tic. Desta forma se houver três componentes atômicos seguidos, alterações realizadas na entrada do primeiro componente levará três tics para afetar a saída do terceiro.
+
+# readInputs: Parte do *Ciclo dos componentes em que ocorre a leitura das entradas. Para um componente (*Component) atômico este processo consiste em copiar os dados de suas entradas para seu *Workspace. Para componentes compostos (*ComposedComponent) este processo consiste em executar o readInputs de todos os componentes de seu circuito interno que possuem ao menos uma entrada (*OuterIOPoint com type "input") conectada a um ponto de entrada (*InnerIOPoint com type "input") do circuito.
+
+# Tic: É a segunda e última etapa de um ciclo. Nele os valores lidos das entradas são processados para que seja calculada a saída do componente. Para um componente componente atômico este processamento é realizado em código escrito manualmente. Os valores lidos estarão na *Workspace e as saídas serão escritas também na *Workspace, em uma região que estará referenciada por objetos *Conductor (desta forma propagando a informação por todos os fios e pontos), cada um fazendo parte de um de seus objetos *OuterIOPoint. Componentes como portões lógicos não ativam a flag stateChanged, pois a saída depende exclusivamente da entrada, já componentes como um clock, possuem a flag stateChanged permanentemente ativada.
+
+# Workspace: É um atributo de componentes (*Component) atômicos que contém uma série de valores inteiros. A cada *readInputs de um componente atômico suas entradas são copiadas para a Workspace. O Workspace também pode possuir alguns valores extras para o estado interno do componente e também contém valores para a saída do componente. Os valores do Workspace para a saída do componente estarão cada um referenciado por um objeto *Conductor.
+
+# conductive_tree: Árvore de elementos condutores. É uma estrutura que contém todos os elementos condutores (objetos *Wire e *Point) conectados fisicamente a um *Point raiz. Não existe uma definição (Classe) para esta estrutura. Esta estrutura é temporária, utiliazda apenas para propagar um *Conductor para todos os elementos ao qual o *OuterIOPoint deste *Conductor está conectados.

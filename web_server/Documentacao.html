@@ -14,7 +14,7 @@
 <div id="Conductor">
 	<h3>Conductor</h3>
 	<p>
-		Um objeto Conductor deve ser associado a uma árvore de elementos condutores que estão conectados. O objeto Conductor contém a quantidade de bits que são transmitidos neste meio e o valor atual contido. Uma árvore de elementos condutores que não está conectada a nenhuma saída (<a href="#OuterIOPoint">OuterIOPoint</a>) de um componente atômico não possuirá um objeto Conductor associado.
+		Um objeto Conductor deve ser associado a uma árvore de elementos condutores que estão conectados (ver <a href="#conductive_tree">conductive_tree</a>). O objeto Conductor contém a quantidade de bits que são transmitidos neste meio e o valor atual contido. Uma árvore de elementos condutores que não está conectada a nenhuma saída (<a href="#OuterIOPoint">OuterIOPoint</a>) de um componente atômico não possuirá um objeto Conductor associado. Um condutor pode refernciar parte (4 bytes) de um <a href="#Workspace">Workspace</a>, se for o caso essa região referenciada pelo Conductor deve necessariamente ser o Conductor de
 	</p>
 </div>
 <div id="Point">
@@ -38,12 +38,68 @@
 <div id="InnerIOPoint">
 	<h3>InnerIOPoint</h3>
 	<p>
-		Entrada/saída interna de um componente. Fica solta no circuito. Os objetos InnerIOPoint se conectam com os objeto OuterIOPoint por fios (<a href="#Wire">Wire</a>) não renderizáveis do componente.
+		Herda de <a href="#IOPoint">IOPoint</a>. Entrada/saída interna de um componente. Fica solta no circuito. Os objetos InnerIOPoint se conectam com os objeto <a href="#OuterIOPoint">OuterIOPoint</a> por fios (<a href="#Wire">Wire</a>) não renderizáveis do componente.
 	</p>
 </div>
 <div id="OuterIOPoint">
 	<h3>OuterIOPoint</h3>
 	<p>
-		Entrada/saída de um componente. No caso de ser um componente composto (*ComposedComponent) cada objeto OuterIOPoint se conectará a um <a href="#InnerIOPoint">InnerIOPoint</a> por fios (<a href="#Wire">Wire</a>) não renderizáveis.
+		Herda de <a href="#IOPoint">IOPoint</a>. Entrada/saída de um componente. No caso de ser um componente composto (*ComposedComponent) cada objeto OuterIOPoint se conectará a um <a href="#InnerIOPoint">InnerIOPoint</a> por fios (<a href="#Wire">Wire</a>) não renderizáveis. Um OuterIOPoint do tipo "output" que recebe um <a href="#Conductor">Conductor</a> em sua instanciação é considerada uma saída fonte pois seu condutor jamais deve ser substituído, apenas propagado pelas árvores de condução (<a href="#conductive_tree">conductive_tree</a>). Isto deve
 	</p>
 </div>
+<div id="Component">
+	<h3>Component</h3>
+	<p>
+		Classe abstrata que representa um componente eletrônico podendo ser atômico ou composto.
+	</p>
+</div>
+<div id="Circuit">
+	<h3>Circuit</h3>
+	<p>
+		Um circuito representa a estrutura interna de um componente,
+	</p>
+</div>
+<div id="Ciclo">
+	<h3>Ciclo</h3>
+	<p>
+		O ciclo de um componente é o processo que faz com que o componente avance um instante no tempo. É dividido em duas partes: A leitura de entradas (<a href="#readInputs">readInputs</a>) e o *tic. Para que o fluxo de informação possua uma velocidade global independente da organização do circuito, cada circuito realiza primeiro a leitura das entradas de todos os componentes e depois realizam suas ações lógicas, impedindo que a mudança de saída de um componente afete a entrada de outro componente dentro do mesmo tic. Desta forma se houver três componentes atômicos seguidos, alterações realizadas na entrada do primeiro componente levará três tics para afetar a saída do terceiro.
+	</p>
+</div>
+<div id="readInputs">
+	<h3>readInputs</h3>
+	<p>
+		Parte do <a href="#Ciclo">Ciclo</a> dos componentes em que ocorre a leitura das entradas. Para um componente (<a href="#Component">Component</a>) atômico este processo consiste em copiar os dados de suas entradas para seu <a href="#Workspace">Workspace</a>. Para componentes compostos (*ComposedComponent) este processo consiste em executar o readInputs de todos os componentes de seu circuito interno que possuem ao menos uma entrada (<a href="#OuterIOPoint">OuterIOPoint</a> com type "input") conectada a um ponto de entrada (<a href="#InnerIOPoint">InnerIOPoint</a> com type "input") do circuito.
+	</p>
+</div>
+<div id="Tic">
+	<h3>Tic</h3>
+	<p>
+		É a segunda e última etapa de um ciclo. Nele os valores lidos das entradas são processados para que seja calculada a saída do componente. Para um componente componente atômico este processamento é realizado em código escrito manualmente. Os valores lidos estarão na <a href="#Workspace">Workspace</a> e as saídas serão escritas também na <a href="#Workspace">Workspace</a>, em uma região que estará referenciada por objetos <a href="#Conductor">Conductor</a> (desta forma propagando a informação por todos os fios e pontos), cada um fazendo parte de um de seus objetos <a href="#OuterIOPoint">OuterIOPoint</a>. Componentes como portões lógicos não ativam a flag stateChanged, pois a saída depende exclusivamente da entrada, já componentes como um clock, possuem a flag stateChanged permanentemente ativada.
+	</p>
+</div>
+<div id="Workspace">
+	<h3>Workspace</h3>
+	<p>
+		É um atributo de componentes (<a href="#Component">Component</a>) atômicos que contém uma série de valores inteiros. A cada <a href="#readInputs">readInputs</a> de um componente atômico suas entradas são copiadas para a Workspace. O Workspace também pode possuir alguns valores extras para o estado interno do componente e também contém valores para a saída do componente. Os valores do Workspace para a saída do componente estarão cada um referenciado por um objeto <a href="#Conductor">Conductor</a>.
+	</p>
+</div>
+<div id="conductive_tree">
+	<h3>conductive_tree</h3>
+	<p>
+		Árvore de elementos condutores. É uma estrutura que contém todos os elementos condutores (objetos <a href="#Wire">Wire</a> e <a href="#Point">Point</a>) conectados fisicamente a um <a href="#Point">Point</a> raiz. Não existe uma definição (Classe) para esta estrutura. Esta estrutura é temporária, utiliazda apenas para propagar um <a href="#Conductor">Conductor</a> para todos os elementos ao qual o <a href="#OuterIOPoint">OuterIOPoint</a> deste <a href="#Conductor">Conductor</a> está conectados.
+	</p>
+</div>
+<script type="text/javascript">
+	let links = document.querySelectorAll('a');
+	for (let i=links.length; i--;) {
+		let link = links[i];
+		let id = link.getAttribute('href');
+		let target = document.querySelector(id);
+		link.addEventListener('mouseover', () => {
+			target.style.color = '#07f';
+		});
+		link.addEventListener('mouseout', () => {
+			target.style.color = '#000';
+		});
+	}
+</script>

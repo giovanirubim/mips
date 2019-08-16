@@ -12,7 +12,7 @@ class Conductor extends Uint32Array {
 	}
 }
 
-const getTree = (root, map) => {
+const getConductiveTree = (root, map) => {
 	const {points, visited} = map;
 	const {id, wires} = root;
 	visited[id] = true;
@@ -20,7 +20,7 @@ const getTree = (root, map) => {
 	for (let i=wires.length; i--;) {
 		const point = wires[i].other(root);
 		if (visited[point.id] !== true) {
-			getTree(point, map);
+			getConductiveTree(point, map);
 			map.wires.push(wire);
 		}
 	}
@@ -41,7 +41,11 @@ class Point {
 	pos(coord) {
 		return coord.set(this.coord);
 	}
-	getNeighbor(array) {
+	value() {
+		const {conductor} = this;
+		return conductor === null ? null : conductor[0];
+	}
+	getNeighbors(array) {
 		const {wires} = this;
 		if (array === undefined) {
 			array = new Array(wires.length);
@@ -52,8 +56,8 @@ class Point {
 		}
 		return array;
 	}
-	getTree() {
-		return getTree(this, {
+	getConductiveTree() {
+		return getConductiveTree(this, {
 			points: [],
 			wires: [],
 			visited: {}
@@ -75,11 +79,18 @@ class InnerIOPoint extends IOPoint {
 }
 
 class OuterIOPoint extends IOPoint {
-	constructor(type, component, conductor) {
+	constructor(type, component, third) {
 		super(type);
 		this.component = component;
-		this.conductor = conductor || null;
-		this.isSource = !!conductor;
+		if (third instanceof Conductor) {
+			this.attrName  = null;
+			this.conductor = third;
+			this.isSource  = 1;
+		} else {
+			this.attrName  = third;
+			this.conductor = null;
+			this.isSource  = 0;
+		}
 		this.transform = Transform();
 	}
 	translate(x, y) {
@@ -149,6 +160,9 @@ class ComposedComponent {
 	readInputs() {
 		let inputChanged = 0, n = 0;
 		const {inputLayer, buffer} = this;
+
+		// Faz a leitura de entrada dos componentes internos que estão na camada de entrada
+		// (inputLayer) e envia ao buffer os que possuem alguma alteração
 		for (let i=inputLayer.length; i--;) {
 			const item = inputLayer[i];
 			inputChanged |= item.readInputs();
@@ -156,14 +170,23 @@ class ComposedComponent {
 				buffer[n++] = item;
 			}
 		}
+
+		// Por questões de eficiência é armazenada a quantidade de objetos a serem atualizados no
+		// buffer ao envés de redimensioná-lo
 		this.bufferLength = n;
 		return this.inputChanged = inputChanged;
 	}
 	tic() {
+
 		let {inputChanged, stateChanged} = this;
+
+		// Nada a atualizar
 		if (inputChanged === 0 && stateChanged === 0) return 0;
+
 		const {nonInput, buffer} = this;
 		let n = this.bufferLength;
+
+		// Leitura das entradas dos componentes restantes
 		for (let = nonInput.length; i--;) {
 			const item = nonInput[i];
 			item.readInputs();
@@ -171,10 +194,13 @@ class ComposedComponent {
 				buffer[n++] = item;
 			}
 		}
+
+		// Tic de todos os componentes
 		for (let i=n; i--;) {
 			buffer[i].tic();
 		}
+
+		// Como houve alguma alteração é considerado que seu estado interno mudou
 		this.stateChanged = 1;
-		this.bufferLength = 0;
 	}
 }

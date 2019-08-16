@@ -115,6 +115,20 @@ int main() {
 	if (n > 0) {
 		fprintf(fout, "\t</p>\n</div>\n", line);
 	}
+	fprintf(fout, "<script type=\"text/javascript\">\n"
+		"\tlet links = document.querySelectorAll('a');\n"
+		"\tfor (let i=links.length; i--;) {\n"
+		"\t\tlet link = links[i];\n"
+		"\t\tlet id = link.getAttribute('href');\n"
+		"\t\tlet target = document.querySelector(id);\n"
+		"\t\tlink.addEventListener('mouseover', () => {\n"
+		"\t\t\ttarget.style.color = '#07f';\n"
+		"\t\t});\n"
+		"\t\tlink.addEventListener('mouseout', () => {\n"
+		"\t\t\ttarget.style.color = '#000';\n"
+		"\t\t});\n"
+		"\t}\n"
+	"</script>");
 	fclose(fin);
 	fclose(fout);
 }
