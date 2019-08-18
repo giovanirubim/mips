@@ -13,3 +13,8 @@ export const pushUnique = (array, item) => {
 	array.push(item);
 	return true;
 };
+export const calcDistance = (ax, ay, bx, by) => {
+	const dx = ax - bx;
+	const dy = ay - by;
+	return Math.sqrt(dx*dx + dy*dy);
+};

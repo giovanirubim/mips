@@ -44,7 +44,7 @@
 <div id="OuterIOPoint">
 	<h3>OuterIOPoint</h3>
 	<p>
-		Herda de <a href="#IOPoint">IOPoint</a>. Entrada/saída de um componente. No caso de ser um componente composto (*ComposedComponent) cada objeto OuterIOPoint se conectará a um <a href="#InnerIOPoint">InnerIOPoint</a> por fios (<a href="#Wire">Wire</a>) não renderizáveis. Um OuterIOPoint do tipo "output" que recebe um <a href="#Conductor">Conductor</a> em sua instanciação é considerada uma saída fonte pois seu condutor jamais deve ser substituído, apenas propagado pelas árvores de condução (<a href="#conductive_tree">conductive_tree</a>). Isto deve
+		Herda de <a href="#IOPoint">IOPoint</a>. Entrada/saída de um componente. No caso de ser um componente composto (*ComposedComponent) cada objeto OuterIOPoint se conectará a um <a href="#InnerIOPoint">InnerIOPoint</a> por fios (<a href="#Wire">Wire</a>) não renderizáveis. Um OuterIOPoint do tipo "output" que recebe um <a href="#Conductor">Conductor</a> em sua instanciação é considerada uma saída fonte (possui a flag isSource ativada) pois seu condutor jamais deve ser substituído, apenas propagado pelas árvores de condução (<a href="#conductive_tree">conductive_tree</a>). Isto deve ser uma exclusividade de objetos OuterIOPoint do tipo "output" e de componentes atômicos, pois a fonte de informação de um OuterIOPoint do tipo "output" de um componente composto (*ComposedComponent) é derivada de seu circuito interno.
 	</p>
 </div>
 <div id="Component">
