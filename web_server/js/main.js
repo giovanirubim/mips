@@ -1,5 +1,5 @@
 import { Coord, Transform } from '/js/transform-2d.js';
-import { Circuit } from '/js/circuit.js';
+import { Circuit, ComposedComponent } from '/js/circuit.js';
 import * as Shared from '/js/shared.js';
 import * as Render from '/js/render.js';
 import * as Controls from '/js/controls.js';
@@ -106,12 +106,35 @@ const bindCanvas = () => {
 		Controls.handleScroll(mouseInfo);
 		clearMouseInfo();
 	});
+	canvas.addEventListener('dblclick', e => {
+		prevent(e);
+		if (mouseInfo.button !== null) return;
+		const {button, ctrlKey, shiftKey} = e;
+		const x = e.offsetX;
+		const y = e.offsetY;
+		const {scrPos0, scrPos1, pos0, pos1} = mouseInfo;
+		mouseInfo.button = button;
+		mouseInfo.ctrl = ctrlKey;
+		mouseInfo.shift = shiftKey;
+		scrPos0.set(x, y);
+		scrPos1.set(x, y);
+		pos0.set(x, y);
+		Render.trackPosition(pos0);
+		pos1.set(pos0);
+		Controls.handleDblclick(mouseInfo);
+		clearMouseInfo();
+	});
 };
 window.addEventListener('load', () => {
 	canvas = document.querySelector('canvas');
-	Shared.setCircuit(new Circuit());
+	const circuit = new Circuit();
+	Shared.setCircuit(circuit);
 	Shared.setCanvas(canvas);
 	bindCanvas();
 	updateCanvasSize();
 	window.addEventListener('resize', updateCanvasSize);
+	setInterval(() => {
+		circuit.tic();
+		Render.drawCircuit();
+	}, 100);
 });

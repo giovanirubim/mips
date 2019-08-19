@@ -48,6 +48,10 @@ export class Point {
 		}
 		return array;
 	}
+	setConductor(conductor) {
+		this.conductor = conductor;
+		return this;
+	}
 }
 
 export class Wire {

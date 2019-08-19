@@ -9,7 +9,10 @@ import {
 	GRID_COLOR,
 	SELECTION_SQUARE_BORDER_WIDTH,
 	SELECTION_SQUARE_BORDER_COLOR,
-	SELECTION_SQUARE_COLOR
+	SELECTION_SQUARE_COLOR,
+	SELECTED_COLOR,
+	COMPONENT_LINE_COLOR,
+	COMPONENT_COLOR
 } from '/js/config.js';
 
 let ctx = null;
@@ -63,22 +66,32 @@ const useTransform = () => {
 	ctx.setTransform(a, b, c, d, e, f);
 };
 const valueToColor = value => {
-	return '#07f';
-	if (value === null) return '#a31';
-	if (value === 0) return '#222';
+	if (value === null) return '#d32';
+	if (value === 0) return '#345';
 	return '#07f';
 };
 const drawPoint = point => {
-	ctx.fillStyle = valueToColor(point.val());
+	if (point.selected) {
+		ctx.fillStyle = SELECTED_COLOR;
+	} else {
+		ctx.fillStyle = valueToColor(point.val());
+	}
 	const [x, y] = point.coord;
 	ctx.beginPath();
 	ctx.arc(x, y, POINT_RADIUS, ROT_0, ROT_4);
 	ctx.fill();
 };
 const drawWire = wire => {
-	ctx.strokeStyle = valueToColor(wire.a.val());
-	wire.a.pos(pos_a);
-	wire.b.pos(pos_b);
+	const {a, b} = wire;
+	const a_selected = a.selected === true || a.component && a.component.selected === true;
+	const b_selected = b.selected === true || b.component && b.component.selected === true;
+	if (a_selected === true && b_selected === true) {
+		ctx.strokeStyle = SELECTED_COLOR;
+	} else {
+		ctx.strokeStyle = valueToColor(a.val());
+	}
+	a.pos(pos_a);
+	b.pos(pos_b);
 	const [ax, ay] = pos_a;
 	const [bx, by] = pos_b;
 	ctx.beginPath();
@@ -147,6 +160,45 @@ const drawGrid = () => {
 	ctx.lineTo(0, y1);
 	ctx.stroke();
 };
+const drawOuterPoint = point => {
+	ctx.save();
+	const [a, b, c, d, e, f] = point.transform;
+	ctx.transform(a, b, c, d, e, f);
+	ctx.lineWidth = 1;
+	ctx.setLineDash([POINT_RADIUS*ROT_1*0.5]);
+	if (point.component.selected === true) {
+		ctx.strokeStyle = SELECTED_COLOR;
+	} else if (point.type === 'input') {
+		ctx.strokeStyle = '#f70';
+	} else {
+		ctx.strokeStyle = '#07f';
+	}
+	ctx.beginPath();
+	ctx.arc(0, 0, POINT_RADIUS, ROT_0 + ROT_1*0.25, ROT_4 + ROT_1*0.25);
+	ctx.stroke();
+	ctx.restore();
+};
+const drawComponent = item => {
+	if (item.selected) {
+		ctx.strokeStyle = SELECTED_COLOR;
+		ctx.fillStyle = SELECTED_COLOR;
+	} else {
+		ctx.strokeStyle = COMPONENT_LINE_COLOR;
+		ctx.fillStyle = COMPONENT_COLOR;
+	}
+	const [ax, ay, bx, by] = item.hitbox;
+	ctx.save();
+	ctx.transform(...item.transform);
+	ctx.beginPath();
+	ctx.rect(ax, ay, bx - ax, by - ay);
+	ctx.fill();
+	ctx.stroke();
+	const {outerPoints} = item;
+	for (let i=outerPoints.length; i--;) {
+		drawOuterPoint(outerPoints[i]);
+	}
+	ctx.restore();
+};
 export const translateView = (x, y) => {
 	zoom.translate(x, y);
 	transformUpdated = false;
@@ -183,13 +235,17 @@ export const drawCircuit = () => {
 	useTransform();
 	calcCurrentScale();
 	drawGrid();
-	const {points, wires} = circuit;
+	const {points, wires, components} = circuit;
+	ctx.lineCap = 'round';
 	ctx.lineWidth = WIRE_WIDTH;
 	for (let i=wires.length; i--;) {
 		drawWire(wires[i]);
 	}
 	for (let i=points.length; i--;) {
 		drawPoint(points[i]);
+	}
+	for (let i=components.length; i--;) {
+		drawComponent(components[i]);
 	}
 	const square = Shared.getSelectionSquare();
 	if (square.x !== null) {

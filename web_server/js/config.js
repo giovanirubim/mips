@@ -1,5 +1,5 @@
-export const POINT_RADIUS = 4;
-export const WIRE_WIDTH = 3;
+export const POINT_RADIUS = 3;
+export const WIRE_WIDTH = 2;
 export const MIN_DRAG_DIST = 10;
 export const GRID = 20;
 export const GRID_WIDTH = 1;
@@ -8,3 +8,6 @@ export const GRID_COLOR = '#222';
 export const SELECTION_SQUARE_BORDER_WIDTH = 1;
 export const SELECTION_SQUARE_BORDER_COLOR = '#07f';
 export const SELECTION_SQUARE_COLOR = 'rgba(0, 119, 255, 0.2)';
+export const SELECTED_COLOR = '#7bf';
+export const COMPONENT_LINE_COLOR = '#ddd';
+export const COMPONENT_COLOR = '#333';

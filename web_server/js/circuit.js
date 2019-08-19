@@ -1,6 +1,9 @@
-import { Coord } from '/js/transform-2d.js'
+import { Coord, Transform } from '/js/transform-2d.js'
 import { Conductor, Point, Wire } from '/js/conduction.js'
-import { arrayRemove } from '/js/utils.js';
+import { arrayRemove, pushUnique, calcDistance } from '/js/utils.js';
+import {
+	POINT_RADIUS
+} from '/js/config.js'
 
 export class IOPoint extends Point {
 	constructor(type) {
@@ -19,12 +22,18 @@ export class OuterIOPoint extends IOPoint {
 	constructor(type, component, third) {
 		super(type);
 		this.component = component;
+		this.defaultCond = null;
 		if (third instanceof Conductor) {
+			this.isSource  = 1;
 			this.attrName  = null;
 			this.conductor = third;
-			this.isSource  = 1;
 		} else {
-			this.attrName  = third;
+			this.isSource  = 0;
+			this.attrName  = third || null;
+			this.conductor = null;
+			if (third) {
+				this.defaultCond = new Conductor(32);
+			}
 		}
 		this.transform = Transform();
 	}
@@ -37,6 +46,19 @@ export class OuterIOPoint extends IOPoint {
 		coord.apply(this.transform);
 		coord.apply(this.component.transform);
 		return coord;
+	}
+	setConductor(conductor) {
+		const {attrName} = this;
+		if (attrName !== null) {
+			const {component, defaultCond} = this;
+			if (conductor === null) {
+				component[attrName] = defaultCond;
+			} else {
+				component[attrName] = conductor;
+			}
+		}
+		this.conductor = conductor;
+		return this;
 	}
 }
 
@@ -56,7 +78,7 @@ const setConductor = (points, conductor) => {
 	for (let i=length; i;) {
 		const point = points[--i];
 		if (point.isSource === 0) {
-			point.conductor = conductor;
+			point.setConductor(conductor);
 		}
 	}
 };
@@ -133,18 +155,106 @@ export class Circuit {
 		for (let i=points.length; i;) {
 			const point = points[--i];
 			const [px, py] = point.coord;
-			if (px === x && py === y) {
+			if (calcDistance(px, py, x, y) <= POINT_RADIUS) {
 				return point;
 			}
 		}
 		return null;
 	}
-	getInnerIOPointAt(x, y) {
+	getAt(x, y, {point, innerio, outerio, component}) {
+		if (point) {
+			const item = this.getPointAt(x, y);
+			if (item !== null) return item;
+		}
+		if (innerio) {
+			const item = this.getInnerIOAt(x, y);
+			if (item !== null) return item;
+		}
+		if (component) {
+			const item = this.getComponentAt(x, y);
+			if (item !== null) return item;
+		}
+		if (outerio) {
+			const item = this.getOuterIOAt(x, y);
+			if (item !== null) return item;
+		}
+		return null;
+	}
+	getComponentAt(x, y) {
+		const a = Coord();
+		const b = Coord();
+		const {components} = this;
+		for (let i=components.length; i;) {
+			const item = components[--i];
+			item.getHitbox(a, b);
+			const [ax, ay] = a;
+			const [bx, by] = b;
+			if (x < ax) continue;
+			if (y < ay) continue;
+			if (x > bx) continue;
+			if (y > by) continue;
+			return item;
+		}
+		return null;
+	}
+	getOuterIOAt(x, y) {
+		const {components} = this;
+		const coord = Coord();
+		for (let i=components.length; i;) {
+			const item = components[--i];
+			const {outerPoints, transform} = item;
+			for (let i=outerPoints.length; i;) {
+				const point = outerPoints[--i];
+				coord.set(0, 0);
+				coord.apply(point.transform);
+				coord.apply(transform);
+				coord.round();
+				const [px, py] = coord;
+				if (calcDistance(px, py, x, y) <= POINT_RADIUS) {
+					return point;
+				}
+			}
+		}
+		return null;
+	}
+	getPointsIn(ax, ay, bx, by) {
+		const {points} = this;
+		const array = [];
+		for (let i=points.length; i;) {
+			const point = points[--i];
+			const [x, y] = point.coord;
+			if (x < ax) continue;
+			if (y < ay) continue;
+			if (x > bx) continue;
+			if (y > by) continue;
+			array.push(point);
+		}
+		return array;
+	}
+	getComponentsIn(ax, ay, bx, by) {
+		const {components} = this;
+		const array = [];
+		const a = Coord();
+		const b = Coord();
+		for (let i=components.length; i;) {
+			const item = components[--i];
+			item.getHitbox(a, b);
+			const [x0, y0] = a;
+			const [x1, y1] = b;
+			if (x1 < ax) continue;
+			if (y1 < ay) continue;
+			if (x0 > bx) continue;
+			if (y0 > by) continue;
+			array.push(item);
+		}
+		return array;
+	}
+	getInnerIOAt(x, y) {
 		const {iopoints} = this;
 		for (let i=iopoints.length; i;) {
 			const point = iopoints[--i];
 			const [px, py] = point.coord;
-			if (px === x && py === y) {
+			if (calcDistance(px, py, x, y) <= POINT_RADIUS) {
 				return point;
 			}
 		}
@@ -174,12 +284,87 @@ export class Circuit {
 		}
 		return this;
 	}
+	add(item) {
+		const {iopoints, components} = this;
+		if (item instanceof IOPoint) {
+			pushUnique(iopoints, item);
+		} else if (item instanceof Component) {
+			pushUnique(components, item);
+		}
+		return this;
+	}
+	tic() {
+		const {components} = this;
+		for (let i=components.length; i--;) {
+			components[i].readInputs();
+		}
+		for (let i=components.length; i--;) {
+			components[i].tic();
+		}
+		return this;
+	}
 }
 
-export class ComposedComponent {
+export class Component {
 	constructor() {
-		this.circuit = new Circuit();
+		this.transform = Transform();
 		this.outerPoints = [];
+		this.inputChanged = 0;
+		this.stateChanged = 0;
+		this.hitbox = null;
+	}
+	addIO(x, y, type, third) {
+		const point = new OuterIOPoint(type, this, third);
+		if (point.attrName) {
+			this[point.attrName] = new Conductor(32);
+		}
+		point.component = this;
+		point.translate(x, y);
+		this.outerPoints.push(point);
+		return point;
+	}
+	translate(x, y) {
+		this.transform.translate(x, y);
+		return this;
+	}
+	rotate(ang) {
+		this.transform.rotate(ang);
+		return this;
+	}
+	hits(coord) {
+		const {transform, hitbox} = this;
+		const [temp_x, temp_y] = coord;
+		coord.reverse(transform);
+		const [x, y] = coord;
+		coord.set(temp_x, temp_y);
+		const [ax, ay, bx, by] = hitbox;
+		if (x < ax) return false;
+		if (y < ay) return false;
+		if (x > bx) return false;
+		if (y > by) return false;
+		return true;
+	}
+	getHitbox(start, end) {
+		const {transform, hitbox} = this;
+		const [ax, ay, bx, by] = hitbox;
+		const [x1, y1] = start.set(ax, ay).apply(transform);
+		const [x2, y2] = start.set(ax, by).apply(transform);
+		const [x3, y3] = start.set(bx, ay).apply(transform);
+		const [x4, y4] = start.set(bx, by).apply(transform);
+		start[0] = Math.min(Math.min(x1, x2), Math.min(x3, x4))
+		start[1] = Math.min(Math.min(y1, y2), Math.min(y3, y4))
+		end[0] = start[0] + bx - ax;
+		end[1] = start[1] + by - ay;
+		return this;
+	}
+	readInputs() { return 0; }
+	tic() { return 0; }
+}
+
+export class ComposedComponent extends Component {
+	constructor() {
+		super();
+		this.circuit = new Circuit();
 
 		// Componentes do circuito interno conectados a ao menos um InnerIOPoint do tipo input
 		this.inputLayer = [];
@@ -187,7 +372,6 @@ export class ComposedComponent {
 		// Componentes do circuito interno não contidos no vetor inputLayer
 		this.nonInput = [];
 
-		// Flag que indica que há alterações na entrada do componente ainda não processadas
 		this.inputChanged = 0;
 
 		// Indica que algum componente interno teve sua entrada ou estado interno alterado no último

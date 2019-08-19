@@ -1,25 +1,67 @@
 import { Coord, Transform } from '/js/transform-2d.js';
-import { calcDistance } from '/js/utils.js';
+import { arrayRemove, calcDistance } from '/js/utils.js';
 import { MIN_DRAG_DIST, GRID } from '/js/config.js';
+import { IOPoint } from '/js/circuit.js';
+import * as AtomicComponent from '/js/atomic-components.js';
 import * as Shared from '/js/shared.js';
 import * as Render from '/js/render.js';
 
 const ES_NONE = 0x1;
 const ES_CLICKED = 0x2;
 const ES_TRANSLATING_VIEW = 0x3;
-const ES_SELECTING = 0x4;
+const ES_SELECTING_SQUARE = 0x4;
 const ES_WIRING = 0x5;
 const ES_TRANSLATING_OBJECT = 0x6;
+const selection = [];
+const prev = Coord();
+
 let eventState = ES_NONE;
 
-const handleClick = mouseInfo => {
-	if (mouseInfo.button === 2) {
-		let [x, y] = mouseInfo.pos1;
-		x = Math.round(x/GRID)*GRID;
-		y = Math.round(y/GRID)*GRID;
-		Shared.getCircuit().createPoint(x, y);
-		Render.drawCircuit();
+const addToSelection = item => {
+	if (item.selected === true) return;
+	item.selected = true;
+	selection.push(item);
+};
+const removeFromSelection = item => {
+	if (item.selected === false) return;
+	item.selected = false;
+	arrayRemove(selection, item);
+};
+const toggleSelection = item => {
+	if (item.selected === true) {
+		removeFromSelection(item);
+	} else {
+		addToSelection(item);
 	}
+};
+const clearSelection = () => {
+	for (let i=selection.length; i--;) {
+		selection[i].selected = false;
+	}
+	selection.length = 0;
+};
+const handleClick = mouseInfo => {
+	const {button} = mouseInfo;
+	if (button === 0) {
+		let [x, y] = mouseInfo.pos1;
+		const circuit = Shared.getCircuit();
+		let item = circuit.getAt(x, y, {
+			point: true,
+			innerio: true,
+			component: true
+		});
+		if (item !== null) {
+			if (mouseInfo.shift) {
+				toggleSelection(item);
+			} else {
+				clearSelection();
+				addToSelection(item);
+			}
+		} else if (!mouseInfo.shift) {
+			clearSelection();
+		}
+	}
+	Render.drawCircuit();
 };
 export const handleMousedown = mouseInfo => {
 	eventState = ES_CLICKED;
@@ -33,19 +75,23 @@ export const handleMousemove = mouseInfo => {
 			eventState = ES_NONE;
 			const {button} = mouseInfo;
 			if (button === 0) {
-				if (mouseInfo.ctrl) {
-					eventState = ES_SELECTING;
-				} else if (mouseInfo.shift) {
+				if (mouseInfo.shift) {
+					eventState = ES_SELECTING_SQUARE;
+				} else if (mouseInfo.ctrl) {
 					eventState = ES_TRANSLATING_VIEW;
 				} else {
-					let [x, y] = mouseInfo.pos0;
-					x = Math.round(x/GRID)*GRID;
-					y = Math.round(y/GRID)*GRID;
+					const [x, y] = mouseInfo.pos0;
 					const circuit = Shared.getCircuit();
-					const obj = circuit.getPointAt(x, y);
-					if (obj) {
+					let obj = circuit.getAt(x, y, {
+						point: true,
+						component: true
+					});
+					if (obj !== null) {
 						mouseInfo.obj = obj;
 						eventState = ES_TRANSLATING_OBJECT;
+						const rx = Math.round(x/GRID)*GRID;
+						const ry = Math.round(y/GRID)*GRID;
+						prev.set(rx, ry);
 					} else {
 						eventState = ES_TRANSLATING_VIEW;
 					}
@@ -60,7 +106,11 @@ export const handleMousemove = mouseInfo => {
 				ay = Math.round(ay/GRID)*GRID;
 				bx = Math.round(bx/GRID)*GRID;
 				by = Math.round(by/GRID)*GRID;
-				const a = circuit.getPointAt(ax, ay) || circuit.createPoint(ax, ay);
+				const a = circuit.getAt(ax, ay, {
+					point: true,
+					innerio: true,
+					outerio: true,
+				}) || circuit.createPoint(ax, ay);
 				const b = circuit.createPoint(ax, ay);
 				mouseInfo.point_a = a;
 				mouseInfo.point_b = b;
@@ -76,13 +126,15 @@ export const handleMousemove = mouseInfo => {
 		const dy = scrPos1[1] - scrPos0[1];
 		Render.setZoom(zoom);
 		Render.translateView(dx, dy);
-	} else if (eventState === ES_SELECTING) {
+	} else if (eventState === ES_SELECTING_SQUARE) {
 		const {pos0, pos1} = mouseInfo;
 		const [ax, ay] = pos0;
 		const [bx, by] = pos1;
-		const sx = bx - ax;
-		const sy = by - ay;
-		Shared.setSelectionSquare(ax, ay, sx, sy);
+		const sx = Math.abs(bx - ax);
+		const sy = Math.abs(by - ay);
+		const x = Math.min(ax, bx);
+		const y = Math.min(ay, by);
+		Shared.setSelectionSquare(x, y, sx, sy);
 	} else if (eventState === ES_WIRING) {
 		const {pos1, point_b} = mouseInfo;
 		let [x, y] = pos1;
@@ -91,30 +143,60 @@ export const handleMousemove = mouseInfo => {
 		point_b.moveTo(x, y);
 	} else if (eventState === ES_TRANSLATING_OBJECT) {
 		const {pos1, obj} = mouseInfo;
-		let [x, y] = pos1;
-		x = Math.round(x/GRID)*GRID;
-		y = Math.round(y/GRID)*GRID;
-		obj.moveTo(x, y);
+		let [ax, ay] = prev;
+		let [bx, by] = pos1;
+		bx = Math.round(bx/GRID)*GRID;
+		by = Math.round(by/GRID)*GRID;
+		let dx = bx - ax;
+		let dy = by - ay;
+		if (obj.selected === true && selection.length > 1) {
+			for (let i=selection.length; i--;) {
+				selection[i].translate(dx, dy);
+			}
+		} else {
+			obj.translate(dx, dy);
+		}
+		prev.set(bx, by);
 	}
 	Render.drawCircuit();
 };
 export const handleMouseup = mouseInfo => {
 	if (eventState === ES_CLICKED) {
 		handleClick(mouseInfo);
-	} else if (eventState === ES_SELECTING) {
+	} else if (eventState === ES_SELECTING_SQUARE) {
+		const circuit = Shared.getCircuit();
+		const {x, y, sx, sy} = Shared.getSelectionSquare();
+		const points = circuit.getPointsIn(x, y, x + sx, y + sy);
+		const components = circuit.getComponentsIn(x, y, x + sx, y + sy);
+		if (mouseInfo.ctrl === true) {
+			for (let i=points.length; i--;) {
+				removeFromSelection(points[i]);
+			}
+			for (let i=components.length; i--;) {
+				removeFromSelection(components[i]);
+			}
+		} else {
+			for (let i=points.length; i--;) {
+				addToSelection(points[i]);
+			}
+			for (let i=components.length; i--;) {
+				addToSelection(components[i]);
+			}
+		}
 		Shared.setSelectionSquare(null, null, null, null);
 		Render.drawCircuit();
 	} else if (eventState === ES_WIRING) {
 		const {point_a, point_b, pos1} = mouseInfo;
 		const circuit = Shared.getCircuit();
-		circuit.removePoint(point_b);
 		let [x, y] = pos1;
 		x = Math.round(x/GRID)*GRID;
 		y = Math.round(y/GRID)*GRID;
-		let point = circuit.getPointAt(x, y);
-		if (point === null) {
-			point = circuit.createPoint(x, y);
-		}
+		circuit.removePoint(point_b);
+		let point = circuit.getAt(x, y, {
+			point: true,
+			outerio: true,
+			innerio: true
+		}) || circuit.createPoint(x, y);
 		const wire = circuit.getWire(point_a, point);
 		if (wire === null) {
 			circuit.createWire(point_a, point);
@@ -130,5 +212,15 @@ export const handleScroll = mouseInfo => {
 	Render.translateView(-dx, -dy);
 	Render.scaleView(1 - mouseInfo.scroll*0.001);
 	Render.translateView(dx, dy);
+	Render.drawCircuit();
+};
+import { NotGate } from '/js/atomic-components.js';
+export const handleDblclick = mouseInfo => {
+	const gate = new NotGate();
+	let [x, y] = mouseInfo.pos1;
+	x = Math.round(x/GRID)*GRID;
+	y = Math.round(y/GRID)*GRID;
+	gate.translate(x, y);
+	Shared.getCircuit().add(gate);
 	Render.drawCircuit();
 };
