@@ -1,7 +1,9 @@
 import * as Shared from '/js/shared.js';
+import * as Drawings from '/js/drawings.js';
 import { Coord, Transform } from '/js/transform-2d.js';
 import {
 	POINT_RADIUS,
+	IO_POINT_RADIUS,
 	WIRE_WIDTH,
 	GRID,
 	GRID_WIDTH,
@@ -68,7 +70,7 @@ const useTransform = () => {
 const valueToColor = value => {
 	if (value === null) return '#d32';
 	if (value === 0) return '#345';
-	return '#07f';
+	return '#0f7';
 };
 const drawPoint = point => {
 	if (point.selected) {
@@ -165,7 +167,7 @@ const drawOuterPoint = point => {
 	const [a, b, c, d, e, f] = point.transform;
 	ctx.transform(a, b, c, d, e, f);
 	ctx.lineWidth = 1;
-	ctx.setLineDash([POINT_RADIUS*ROT_1*0.5]);
+	ctx.setLineDash([IO_POINT_RADIUS*ROT_1*0.5]);
 	if (point.component.selected === true) {
 		ctx.strokeStyle = SELECTED_COLOR;
 	} else if (point.type === 'input') {
@@ -174,29 +176,33 @@ const drawOuterPoint = point => {
 		ctx.strokeStyle = '#07f';
 	}
 	ctx.beginPath();
-	ctx.arc(0, 0, POINT_RADIUS, ROT_0 + ROT_1*0.25, ROT_4 + ROT_1*0.25);
+	ctx.arc(0, 0, IO_POINT_RADIUS, ROT_0 + ROT_1*0.25, ROT_4 + ROT_1*0.25);
 	ctx.stroke();
 	ctx.restore();
 };
-const drawComponent = item => {
-	if (item.selected) {
-		ctx.strokeStyle = SELECTED_COLOR;
-		ctx.fillStyle = SELECTED_COLOR;
-	} else {
-		ctx.strokeStyle = COMPONENT_LINE_COLOR;
-		ctx.fillStyle = COMPONENT_COLOR;
-	}
-	const [ax, ay, bx, by] = item.hitbox;
-	ctx.save();
-	ctx.transform(...item.transform);
+const drawHitbox = item => {
+	const {hitbox} = item;
+	const [ax, ay, bx, by] = hitbox;
+	ctx.lineWidth = 1;
+	ctx.strokeStyle = '#07f';
 	ctx.beginPath();
 	ctx.rect(ax, ay, bx - ax, by - ay);
-	ctx.fill();
 	ctx.stroke();
+};
+const drawComponent = item => {
+	ctx.save();
+	ctx.transform(...item.transform);
+	const {draw} = item;
+	if (!draw) {
+		Drawings.component(ctx, item);
+	} else {
+		draw(ctx, item);
+	}
 	const {outerPoints} = item;
 	for (let i=outerPoints.length; i--;) {
 		drawOuterPoint(outerPoints[i]);
 	}
+	drawHitbox(item);
 	ctx.restore();
 };
 export const translateView = (x, y) => {
@@ -237,6 +243,7 @@ export const drawCircuit = () => {
 	drawGrid();
 	const {points, wires, components} = circuit;
 	ctx.lineCap = 'round';
+	ctx.lineJoin = 'round';
 	ctx.lineWidth = WIRE_WIDTH;
 	for (let i=wires.length; i--;) {
 		drawWire(wires[i]);
@@ -244,7 +251,7 @@ export const drawCircuit = () => {
 	for (let i=points.length; i--;) {
 		drawPoint(points[i]);
 	}
-	for (let i=components.length; i--;) {
+	for (let i=0; i<components.length; ++i) {
 		drawComponent(components[i]);
 	}
 	const square = Shared.getSelectionSquare();

@@ -9,6 +9,7 @@ import {
 	OuterIOPoint,
 	Component
 } from '/js/circuit.js';
+import * as Drawings from '/js/drawings.js';
 
 export class NotGate extends Component {
 	constructor() {
@@ -22,6 +23,8 @@ export class NotGate extends Component {
 		this.addIO(-20, 0, 'input', 'input');
 		const output = this.addIO(20, 0, 'output', new Conductor(32, buffer, 1));
 		output.conductor[0] = ~0;
+
+		this.draw = Drawings.notGate;
 	}
 	readInputs() {
 		const {input, workspace} = this;
@@ -37,6 +40,108 @@ export class NotGate extends Component {
 		if (this.inputChanged === 0) return 0;
 		const {workspace} = this;
 		workspace[1] = ~workspace[0];
+		return 0;
+	}
+}
+
+export class XorGate extends Component {
+	constructor() {
+		super();
+		this.hitbox = [-15, -20, 35, 20];
+
+		const workspace = new Uint32Array(3);
+		const {buffer} = workspace;
+		this.workspace = workspace;
+
+		this.addIO(-20, -20, 'input', 'input0');
+		this.addIO(-20, +20, 'input', 'input1');
+		const output = this.addIO(40, 0, 'output', new Conductor(32, buffer, 2));
+
+		this.draw = Drawings.xorGate;
+	}
+	readInputs() {
+		const {input0, input1, workspace} = this;
+		const val0 = input0[0];
+		const val1 = input1[0];
+		let inputChanged = 0;
+		inputChanged |= val0 !== workspace[0];
+		inputChanged |= val1 !== workspace[1];
+		workspace[0] = val0;
+		workspace[1] = val1;
+		return this.inputChanged = inputChanged;
+	}
+	tic() {
+		if (this.inputChanged === 0) return 0;
+		const {workspace} = this;
+		workspace[2] = workspace[0] ^ workspace[1];
+		return 0;
+	}
+}
+
+export class AndGate extends Component {
+	constructor() {
+		super();
+		this.hitbox = [-15, -20, 35, 20];
+
+		const workspace = new Uint32Array(3);
+		const {buffer} = workspace;
+		this.workspace = workspace;
+
+		this.addIO(-20, -20, 'input', 'input0');
+		this.addIO(-20, +20, 'input', 'input1');
+		const output = this.addIO(40, 0, 'output', new Conductor(32, buffer, 2));
+
+		this.draw = Drawings.andGate;
+	}
+	readInputs() {
+		const {input0, input1, workspace} = this;
+		const val0 = input0[0];
+		const val1 = input1[0];
+		let inputChanged = 0;
+		inputChanged |= val0 !== workspace[0];
+		inputChanged |= val1 !== workspace[1];
+		workspace[0] = val0;
+		workspace[1] = val1;
+		return this.inputChanged = inputChanged;
+	}
+	tic() {
+		if (this.inputChanged === 0) return 0;
+		const {workspace} = this;
+		workspace[2] = workspace[0] & workspace[1];
+		return 0;
+	}
+}
+
+export class OrGate extends Component {
+	constructor() {
+		super();
+		this.hitbox = [-15, -20, 35, 20];
+
+		const workspace = new Uint32Array(3);
+		const {buffer} = workspace;
+		this.workspace = workspace;
+
+		this.addIO(-20, -20, 'input', 'input0');
+		this.addIO(-20, +20, 'input', 'input1');
+		const output = this.addIO(40, 0, 'output', new Conductor(32, buffer, 2));
+
+		this.draw = Drawings.orGate;
+	}
+	readInputs() {
+		const {input0, input1, workspace} = this;
+		const val0 = input0[0];
+		const val1 = input1[0];
+		let inputChanged = 0;
+		inputChanged |= val0 !== workspace[0];
+		inputChanged |= val1 !== workspace[1];
+		workspace[0] = val0;
+		workspace[1] = val1;
+		return this.inputChanged = inputChanged;
+	}
+	tic() {
+		if (this.inputChanged === 0) return 0;
+		const {workspace} = this;
+		workspace[2] = workspace[0] | workspace[1];
 		return 0;
 	}
 }
