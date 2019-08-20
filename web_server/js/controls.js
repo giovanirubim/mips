@@ -1,10 +1,11 @@
 import { Coord, Transform } from '/js/transform-2d.js';
 import { arrayRemove, calcDistance } from '/js/utils.js';
 import { MIN_DRAG_DIST, GRID } from '/js/config.js';
-import { IOPoint } from '/js/circuit.js';
+import { Component, IOPoint } from '/js/circuit.js';
 import * as AtomicComponent from '/js/atomic-components.js';
 import * as Shared from '/js/shared.js';
 import * as Render from '/js/render.js';
+import * as Encoder from '/js/encoder.js';
 
 const ES_NONE = 0x1;
 const ES_CLICKED = 0x2;
@@ -14,9 +15,26 @@ const ES_WIRING = 0x5;
 const ES_TRANSLATING_OBJECT = 0x6;
 const selection = [];
 const prev = Coord();
+const history = [];
+const keyHandlerMap = {};
 
 let eventState = ES_NONE;
-
+const keyEventToStr = (key, ctrl, shift) => {
+	return `${key}-${ ctrl|0 }-${ shift|0 }`;
+};
+const addKeyHandler = (key, ctrl, shift, handler) => {
+	const str = keyEventToStr(key, ctrl, shift);
+	keyHandlerMap[str] = handler;
+};
+const triggerKey = (key, ctrl, shift, info) => {
+	const str = keyEventToStr(key, ctrl, shift);
+	const handler = keyHandlerMap[str];
+	if (handler) {
+		handler(info);
+		return true;
+	}
+	return false;
+};
 const addToSelection = item => {
 	if (item.selected === true) return;
 	item.selected = true;
@@ -48,7 +66,8 @@ const handleClick = mouseInfo => {
 		let item = circuit.getAt(x, y, {
 			point: true,
 			innerio: true,
-			component: true
+			component: true,
+			wire: true
 		});
 		if (item !== null) {
 			if (mouseInfo.shift) {
@@ -198,7 +217,7 @@ export const handleMouseup = mouseInfo => {
 			innerio: true
 		}) || circuit.createPoint(x, y);
 		const wire = circuit.getWire(point_a, point);
-		if (wire === null) {
+		if (wire === null && point_a !== point) {
 			circuit.createWire(point_a, point);
 		}
 		Render.drawCircuit();
@@ -214,9 +233,9 @@ export const handleScroll = mouseInfo => {
 	Render.translateView(dx, dy);
 	Render.drawCircuit();
 };
-import { NotGate } from '/js/atomic-components.js';
+import { NotGate, OrGate, AndGate, XorGate } from '/js/atomic-components.js';
 export const handleDblclick = mouseInfo => {
-	const gate = new NotGate();
+	const gate = new [NotGate, OrGate, AndGate, XorGate][Math.floor(Math.random()*4)];
 	let [x, y] = mouseInfo.pos1;
 	x = Math.round(x/GRID)*GRID;
 	y = Math.round(y/GRID)*GRID;
@@ -224,3 +243,47 @@ export const handleDblclick = mouseInfo => {
 	Shared.getCircuit().add(gate);
 	Render.drawCircuit();
 };
+export const handleKeydown = e => {
+	const key = e.key.toLowerCase().replace('arrow', '');
+	const ctrl = e.ctrlKey;
+	const shift = e.shiftKey;
+	if (triggerKey(key, ctrl, shift)) {
+		e.preventDefault();
+		e.stopPropagation();
+	}
+};
+addKeyHandler('delete', 0, 0, () => {
+	const circuit = Shared.getCircuit();
+	for (let i=selection.length; i--;) {
+		const item = selection[i];
+		circuit.remove(item);
+	}
+	Render.drawCircuit();
+});
+addKeyHandler('d', 1, 0, () => {
+	const oldToNew = {};
+	const newToOld = {};
+	const array = [];
+	const circuit = Shared.getCircuit();
+	for (let i=selection.length; i--;) {
+		const item = selection[i];
+		if (item instanceof Component) {
+			const n = item.clone();
+			if (n) {
+				circuit.add(n);
+				newToOld[n.id] = item;
+				oldToNew[item.id] = n;
+				array.push(n);
+			}
+		}
+	}
+	clearSelection();
+	for (let i=array.length; i;) {
+		addToSelection(array[--i]);
+	}
+	Render.drawCircuit();
+});
+addKeyHandler('s', 1, 0, () => {
+	const circuit = Shared.getCircuit();
+	console.log(Encoder.encodeCircuit(circuit));
+});

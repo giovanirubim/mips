@@ -1,8 +1,9 @@
 import { Coord, Transform } from '/js/transform-2d.js'
 import { Conductor, Point, Wire } from '/js/conduction.js'
-import { arrayRemove, pushUnique, calcDistance } from '/js/utils.js';
+import { arrayRemove, pushUnique, calcDistance, lineDistance } from '/js/utils.js';
 import {
-	POINT_RADIUS
+	POINT_PICK_RADIUS,
+	WIRE_PICK_DIST
 } from '/js/config.js'
 
 export class IOPoint extends Point {
@@ -155,13 +156,13 @@ export class Circuit {
 		for (let i=points.length; i;) {
 			const point = points[--i];
 			const [px, py] = point.coord;
-			if (calcDistance(px, py, x, y) <= POINT_RADIUS) {
+			if (calcDistance(px, py, x, y) <= POINT_PICK_RADIUS) {
 				return point;
 			}
 		}
 		return null;
 	}
-	getAt(x, y, {point, innerio, outerio, component}) {
+	getAt(x, y, {point, innerio, outerio, component, wire}) {
 		if (point) {
 			const item = this.getPointAt(x, y);
 			if (item !== null) return item;
@@ -176,6 +177,10 @@ export class Circuit {
 		}
 		if (outerio) {
 			const item = this.getOuterIOAt(x, y);
+			if (item !== null) return item;
+		}
+		if (wire) {
+			const item = this.getWireAt(x, y);
 			if (item !== null) return item;
 		}
 		return null;
@@ -210,9 +215,25 @@ export class Circuit {
 				coord.apply(transform);
 				coord.round();
 				const [px, py] = coord;
-				if (calcDistance(px, py, x, y) <= POINT_RADIUS) {
+				if (calcDistance(px, py, x, y) <= POINT_PICK_RADIUS) {
 					return point;
 				}
+			}
+		}
+		return null;
+	}
+	getWireAt(x, y) {
+		const pos_a = Coord();
+		const pos_b = Coord();
+		const {wires} = this;
+		for (let i=wires.length; i--;) {
+			const wire = wires[i];
+			const {a, b} = wire;
+			const [ax, ay] = a.pos(pos_a);
+			const [bx, by] = b.pos(pos_b);
+			const d = lineDistance(x, y, ax, ay, bx, by);
+			if (d <= WIRE_PICK_DIST) {
+				return wire;
 			}
 		}
 		return null;
@@ -254,35 +275,51 @@ export class Circuit {
 		for (let i=iopoints.length; i;) {
 			const point = iopoints[--i];
 			const [px, py] = point.coord;
-			if (calcDistance(px, py, x, y) <= POINT_RADIUS) {
+			if (calcDistance(px, py, x, y) <= POINT_PICK_RADIUS) {
 				return point;
 			}
 		}
 		return null;
 	}
 	removeWire(wire) {
-		wire.disconnect();
-		arrayRemove(this.wires, wire);
-		const {a, b} = wire;
-		resetConductors(a);
-		resetConductors(b);
+		if (arrayRemove(this.wires, wire) === true) {
+			wire.disconnect();
+			const {a, b} = wire;
+			resetConductors(a);
+			resetConductors(b);
+		}
 		return this;
 	}
 	removePoint(point) {
-		const neighbors = point.getNeighbors();
-		const {wires} = point;
-		while (wires.length !== 0) {
-			this.removeWire(wires[0]);
-		}
-		arrayRemove(this.points, point);
-		const visited = {};
-		for (let i=neighbors.length; i--;) {
-			const rootPoint = neighbors[i];
-			const array = [];
-			getConnectedPoints(rootPoint, array, visited);
-			setConductor(array, getSourceConductor(array));
+		if (arrayRemove(this.points, point) === true) {
+			const neighbors = point.getNeighbors();
+			const {wires} = point;
+			while (wires.length !== 0) {
+				this.removeWire(wires[0]);
+			}
 		}
 		return this;
+	}
+	removeComponent(item) {
+		if (arrayRemove(this.components, item) === true) {
+			const {outerPoints} = item;
+			for (let i=outerPoints.length; i--;) {
+				const {wires} = outerPoints[i];
+				while (wires.length) {
+					this.removeWire(wires[0]);
+				}
+			}
+		}
+		return this;
+	}
+	remove(item) {
+		if (item instanceof Component) {
+			this.removeComponent(item);
+		} else if (item instanceof Wire) {
+			this.removeWire(item);
+		} else if (item instanceof Point) {
+			this.removePoint(item);
+		}
 	}
 	add(item) {
 		const {iopoints, components} = this;
@@ -307,11 +344,13 @@ export class Circuit {
 
 export class Component {
 	constructor() {
+		this.id = Symbol();
 		this.transform = Transform();
 		this.outerPoints = [];
 		this.inputChanged = 0;
 		this.stateChanged = 0;
 		this.hitbox = null;
+		this.args = '';
 	}
 	addIO(x, y, type, third) {
 		const point = new OuterIOPoint(type, this, third);

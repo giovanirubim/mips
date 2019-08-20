@@ -85,9 +85,7 @@ const drawPoint = point => {
 };
 const drawWire = wire => {
 	const {a, b} = wire;
-	const a_selected = a.selected === true || a.component && a.component.selected === true;
-	const b_selected = b.selected === true || b.component && b.component.selected === true;
-	if (a_selected === true && b_selected === true) {
+	if (wire.selected === true) {
 		ctx.strokeStyle = SELECTED_COLOR;
 	} else {
 		ctx.strokeStyle = valueToColor(a.val());

@@ -26,6 +26,11 @@ export class NotGate extends Component {
 
 		this.draw = Drawings.notGate;
 	}
+	clone() {
+		const item = new NotGate();
+		item.transform.set(this.transform);
+		return item;
+	}
 	readInputs() {
 		const {input, workspace} = this;
 		const val = input[0];
@@ -59,6 +64,11 @@ export class XorGate extends Component {
 
 		this.draw = Drawings.xorGate;
 	}
+	clone() {
+		const item = new XorGate();
+		item.transform.set(this.transform);
+		return item;
+	}
 	readInputs() {
 		const {input0, input1, workspace} = this;
 		const val0 = input0[0];
@@ -68,6 +78,7 @@ export class XorGate extends Component {
 		inputChanged |= val1 !== workspace[1];
 		workspace[0] = val0;
 		workspace[1] = val1;
+		// console.log(inputChanged);
 		return this.inputChanged = inputChanged;
 	}
 	tic() {
@@ -92,6 +103,11 @@ export class AndGate extends Component {
 		const output = this.addIO(40, 0, 'output', new Conductor(32, buffer, 2));
 
 		this.draw = Drawings.andGate;
+	}
+	clone() {
+		const item = new AndGate();
+		item.transform.set(this.transform);
+		return item;
 	}
 	readInputs() {
 		const {input0, input1, workspace} = this;
@@ -126,6 +142,11 @@ export class OrGate extends Component {
 		const output = this.addIO(40, 0, 'output', new Conductor(32, buffer, 2));
 
 		this.draw = Drawings.orGate;
+	}
+	clone() {
+		const item = new OrGate();
+		item.transform.set(this.transform);
+		return item;
 	}
 	readInputs() {
 		const {input0, input1, workspace} = this;

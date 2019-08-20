@@ -1,8 +1,6 @@
 import { Coord, Transform } from '/js/transform-2d.js';
 import { arrayRemove, pushUnique } from '/js/utils.js';
 
-let last_id = 0;
-let newId = () => ++last_id;
 export class Conductor extends Uint32Array {
 	constructor(bitLength, buffer, index) {
 		if (buffer !== undefined) {
@@ -17,7 +15,7 @@ export class Conductor extends Uint32Array {
 window.Conductor = Conductor;
 export class Point {
 	constructor() {
-		this.id = newId();
+		this.id = Symbol();
 		this.coord = Coord();
 		this.conductor = null;
 		this.isSource = 0;
@@ -56,7 +54,7 @@ export class Point {
 
 export class Wire {
 	constructor(a, b) {
-		this.id = newId();
+		this.id = Symbol();
 		this.a = a;
 		this.b = b;
 		pushUnique(a.wires, this);

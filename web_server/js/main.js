@@ -3,7 +3,6 @@ import { Circuit, ComposedComponent } from '/js/circuit.js';
 import * as Shared from '/js/shared.js';
 import * as Render from '/js/render.js';
 import * as Controls from '/js/controls.js';
-import { OrGate, AndGate, NotGate, XorGate } from '/js/atomic-components.js';
 
 let canvas, sx, sy;
 const mouseInfo = {
@@ -133,13 +132,12 @@ window.addEventListener('load', () => {
 	Shared.setCanvas(canvas);
 	bindCanvas();
 	updateCanvasSize();
-	window.addEventListener('resize', updateCanvasSize);
-	// circuit.add(new OrGate());
-	// circuit.add(new XorGate());
-	circuit.add(new AndGate());
-	// circuit.add(new NotGate());
 	setInterval(() => {
 		circuit.tic();
 		Render.drawCircuit();
 	}, 100);
+	window.addEventListener('resize', updateCanvasSize);
+	window.addEventListener('keydown', e => {
+		Controls.handleKeydown(e);
+	});
 });
