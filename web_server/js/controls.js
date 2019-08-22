@@ -2,6 +2,7 @@ import { Coord, Transform } from '/js/transform-2d.js';
 import { arrayRemove, calcDistance } from '/js/utils.js';
 import { MIN_DRAG_DIST, GRID } from '/js/config.js';
 import { Component, IOPoint } from '/js/circuit.js';
+import { Point } from '/js/conduction.js';
 import * as AtomicComponent from '/js/atomic-components.js';
 import * as Shared from '/js/shared.js';
 import * as Render from '/js/render.js';
@@ -81,6 +82,88 @@ const handleClick = mouseInfo => {
 		}
 	}
 	Render.drawCircuit();
+};
+const removeDoubles = () => {
+	const coordMap = {};
+	const coord = Coord();
+	const groups = [];
+	const add = item => {
+		const pos = item.pos(coord).join(',');
+		const group = coordMap[pos] || (coordMap[pos]=[]);
+		group.push(item);
+		if (group.length === 2) {
+			group.x = pos[0];
+			group.y = pos[1];
+			groups.push(group);
+		}
+	};
+	const circuit = Shared.getCircuit();
+	const {components, points, iopoints} = circuit;
+	for (let i=components.length; i--;) {
+		const {outerPoints} = components[i];
+		for (let i=outerPoints.length; i--;) {
+			add(outerPoints[i]);
+		}
+	}
+	for (let i=points.length; i--;) {
+		add(points[i]);
+	}
+	for (let i=iopoints.length; i--;) {
+		add(iopoints[i]);
+	}
+	for (let i=groups.length; i--;) {
+		const group = groups[i];
+		const points = [];
+		const iopoints = [];
+		const neighbors = [];
+		let rootPoint = null;
+		for (let i=group.length; i--;) {
+			const point = group[i];
+			point.getNeighbors(neighbors);
+			if (point instanceof IOPoint) {
+				rootPoint = point;
+				neighbors.push(point);
+				circuit.disconnectPoint(point);
+			} else {
+				points.push(point);
+			}
+		}
+		for (let i=points.length; i--;) {
+			if (i !== 0 || rootPoint !== null) {
+				circuit.removePoint(points[i]);
+			} else {
+				rootPoint = points[0];
+				circuit.disconnectPoint(rootPoint);
+			}
+		}
+		const idMap = {};
+		for (let i=neighbors.length; i--;) {
+			const point = neighbors[i];
+			const {id} = point;
+			if (idMap[id] === true) {
+				continue;
+			}
+			idMap[id] = true;
+			if (circuit.pointExists(point) === true && point !== rootPoint) {
+				circuit.createWire(point, rootPoint);
+			}
+		}
+	}
+};
+const trim = () => {
+	const circuit = Shared.getCircuit();
+	const {points} = circuit;
+	const array = [];
+	for (let i=points.length; i--;) {
+		const point = points[i];
+		const {wires} = point;
+		if (wires.length < 2) {
+			array.push(point);
+		}
+	}
+	for (let i=array.length; i--;) {
+		circuit.removePoint(array[i]);
+	}
 };
 export const handleMousedown = mouseInfo => {
 	eventState = ES_CLICKED;
@@ -220,7 +303,11 @@ export const handleMouseup = mouseInfo => {
 		if (wire === null && point_a !== point) {
 			circuit.createWire(point_a, point);
 		}
+		removeDoubles();
 		Render.drawCircuit();
+	} else if (eventState === ES_TRANSLATING_OBJECT) {
+		removeDoubles();
+		Render.drawCircuit();	
 	}
 };
 export const handleScroll = mouseInfo => {
@@ -286,4 +373,25 @@ addKeyHandler('d', 1, 0, () => {
 addKeyHandler('s', 1, 0, () => {
 	const circuit = Shared.getCircuit();
 	console.log(Encoder.encodeCircuit(circuit));
+});
+addKeyHandler('d', 0, 0, () => {
+	removeDoubles();
+	Render.drawCircuit();
+});
+addKeyHandler('t', 0, 0, () => {
+	trim();
+	Render.drawCircuit();
+});
+addKeyHandler('r', 1, 0, () => {
+	if (selection.length === 1) {
+		const item = selection[0];
+		if (item instanceof Component) {
+			const coord = Coord();
+			const [x, y] = item.pos(coord);
+			item.translate(-x, -y);
+			item.rotate(Math.PI/2);
+			item.translate(x, y);
+			Render.drawCircuit();
+		}
+	}
 });

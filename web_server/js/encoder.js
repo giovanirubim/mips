@@ -44,6 +44,8 @@ export const encodeCircuit = circuit => {
 	for (let i=components.length; i--;) {
 		const item = components[i];
 		const id = giveId(item);
+		add(`const ${ id } = new ${ item.constructor.name }(${ item.args });`);
+		add(`circuit.add(${ id });`);
 	}
 	for (let i=wires.length; i--;) {
 		const wire = wires[i];

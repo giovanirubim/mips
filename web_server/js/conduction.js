@@ -39,10 +39,10 @@ export class Point {
 	getNeighbors(array) {
 		const {wires} = this;
 		if (array === undefined) {
-			array = new Array(wires.length);
+			array = [];
 		}
 		for (let i=wires.length; i--;) {
-			array[i] = wires[i].other(this);
+			array.push(wires[i].other(this));
 		}
 		return array;
 	}

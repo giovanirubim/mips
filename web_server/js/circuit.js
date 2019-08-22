@@ -143,6 +143,11 @@ export class Circuit {
 		}
 		return this.createWireFast(a, b);
 	}
+
+	resetConductors(rootPoint) {
+		resetConductors(rootPoint);
+		return this;
+	}
 	getWire(a, b) {
 		const {wires} = a;
 		for (let i=wires.length; i--;) {
@@ -188,17 +193,14 @@ export class Circuit {
 	getComponentAt(x, y) {
 		const a = Coord();
 		const b = Coord();
+		const pos = Coord();
+		pos.set(x, y);
 		const {components} = this;
 		for (let i=components.length; i;) {
 			const item = components[--i];
-			item.getHitbox(a, b);
-			const [ax, ay] = a;
-			const [bx, by] = b;
-			if (x < ax) continue;
-			if (y < ay) continue;
-			if (x > bx) continue;
-			if (y > by) continue;
-			return item;
+			if (item.hits(pos)) {
+				return item;
+			}
 		}
 		return null;
 	}
@@ -281,6 +283,9 @@ export class Circuit {
 		}
 		return null;
 	}
+	pointExists(point) {
+		return this.points.indexOf(point) !== -1;
+	}
 	removeWire(wire) {
 		if (arrayRemove(this.wires, wire) === true) {
 			wire.disconnect();
@@ -290,12 +295,29 @@ export class Circuit {
 		}
 		return this;
 	}
+	removeWireFast(wire) {
+		if (arrayRemove(this.wires, wire) === true) {
+			wire.disconnect();
+			const {a, b} = wire;
+		}
+		return this;
+	}
 	removePoint(point) {
 		if (arrayRemove(this.points, point) === true) {
 			const neighbors = point.getNeighbors();
 			const {wires} = point;
 			while (wires.length !== 0) {
 				this.removeWire(wires[0]);
+			}
+		}
+		return this;
+	}
+	removePointFast(point) {
+		if (arrayRemove(this.points, point) === true) {
+			const neighbors = point.getNeighbors();
+			const {wires} = point;
+			while (wires.length !== 0) {
+				this.removeWireFast(wires[0]);
 			}
 		}
 		return this;
@@ -320,6 +342,13 @@ export class Circuit {
 		} else if (item instanceof Point) {
 			this.removePoint(item);
 		}
+	}
+	disconnectPoint(point) {
+		const {wires} = point;
+		for (let i=wires.length; i;) {
+			this.removeWire(wires[--i]);
+		}
+		return this;
 	}
 	add(item) {
 		const {iopoints, components} = this;
@@ -362,6 +391,12 @@ export class Component {
 		this.outerPoints.push(point);
 		return point;
 	}
+	pos(coord) {
+		const {transform} = this;
+		coord[0] = transform[4];
+		coord[1] = transform[5];
+		return coord;
+	}
 	translate(x, y) {
 		this.transform.translate(x, y);
 		return this;
@@ -371,12 +406,12 @@ export class Component {
 		return this;
 	}
 	hits(coord) {
-		const {transform, hitbox} = this;
-		const [temp_x, temp_y] = coord;
-		coord.reverse(transform);
+		const a = Coord();
+		const b = Coord();
+		this.getHitbox(a, b);
 		const [x, y] = coord;
-		coord.set(temp_x, temp_y);
-		const [ax, ay, bx, by] = hitbox;
+		const [ax, ay] = a;
+		const [bx, by] = b;
 		if (x < ax) return false;
 		if (y < ay) return false;
 		if (x > bx) return false;

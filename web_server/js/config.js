@@ -1,8 +1,8 @@
-export const POINT_RADIUS = 2;
+export const POINT_RADIUS = 3;
 export const POINT_PICK_RADIUS = 6;
 export const IO_POINT_RADIUS = 5;
 export const WIRE_PICK_DIST = 3;
-export const WIRE_WIDTH = 3;
+export const WIRE_WIDTH = 2;
 export const MIN_DRAG_DIST = 10;
 export const GRID = 20;
 export const GRID_WIDTH = 1;
