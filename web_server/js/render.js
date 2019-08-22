@@ -34,7 +34,7 @@ const pos_a = Coord();
 const pos_b = Coord();
 
 // Matrizes de transformação
-const zoom = Transform();
+const zoom = Transform().set(2, 0, 0, 2, 0, 0);
 const screenMap = Transform();
 const transform = Transform();
 
@@ -73,14 +73,18 @@ const valueToColor = value => {
 	return '#0f7';
 };
 const drawPoint = point => {
-	if (point.selected) {
+	if (point.selected === true) {
 		ctx.fillStyle = SELECTED_COLOR;
 	} else {
 		ctx.fillStyle = valueToColor(point.val());
 	}
 	const [x, y] = point.coord;
 	ctx.beginPath();
-	ctx.arc(x, y, POINT_RADIUS, ROT_0, ROT_4);
+	if (point.wires.length !== 2) {
+		ctx.arc(x, y, POINT_RADIUS, ROT_0, ROT_4);
+	} else {
+		ctx.arc(x, y, WIRE_WIDTH*0.75, ROT_0, ROT_4);
+	}
 	ctx.fill();
 };
 const drawWire = wire => {
@@ -182,7 +186,7 @@ const drawHitbox = item => {
 	const {hitbox} = item;
 	const [ax, ay, bx, by] = hitbox;
 	ctx.lineWidth = 1;
-	ctx.strokeStyle = '#07f';
+	ctx.strokeStyle = 'rgba(0, 119, 255, 0.5)';
 	ctx.beginPath();
 	ctx.rect(ax, ay, bx - ax, by - ay);
 	ctx.stroke();

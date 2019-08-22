@@ -106,6 +106,11 @@ export class Circuit {
 		this.points = [];
 		this.iopoints = [];
 		this.components = [];
+
+		// Auxiliares
+		this.pos = Coord();
+		this.pos_a = Coord();
+		this.pos_b = Coord();
 	}
 	createPoint(x, y) {
 		const point = new Point();
@@ -191,9 +196,7 @@ export class Circuit {
 		return null;
 	}
 	getComponentAt(x, y) {
-		const a = Coord();
-		const b = Coord();
-		const pos = Coord();
+		const {pos} = this;
 		pos.set(x, y);
 		const {components} = this;
 		for (let i=components.length; i;) {
@@ -225,9 +228,7 @@ export class Circuit {
 		return null;
 	}
 	getWireAt(x, y) {
-		const pos_a = Coord();
-		const pos_b = Coord();
-		const {wires} = this;
+		const {wires, pos_a, pos_b} = this;
 		for (let i=wires.length; i--;) {
 			const wire = wires[i];
 			const {a, b} = wire;
@@ -255,15 +256,13 @@ export class Circuit {
 		return array;
 	}
 	getComponentsIn(ax, ay, bx, by) {
-		const {components} = this;
+		const {components, pos_a, pos_b} = this;
 		const array = [];
-		const a = Coord();
-		const b = Coord();
 		for (let i=components.length; i;) {
 			const item = components[--i];
-			item.getHitbox(a, b);
-			const [x0, y0] = a;
-			const [x1, y1] = b;
+			item.getHitbox(pos_a, pos_b);
+			const [x0, y0] = pos_a;
+			const [x1, y1] = pos_b;
 			if (x1 < ax) continue;
 			if (y1 < ay) continue;
 			if (x0 > bx) continue;
@@ -342,6 +341,7 @@ export class Circuit {
 		} else if (item instanceof Point) {
 			this.removePoint(item);
 		}
+		return this;
 	}
 	disconnectPoint(point) {
 		const {wires} = point;
@@ -380,6 +380,10 @@ export class Component {
 		this.stateChanged = 0;
 		this.hitbox = null;
 		this.args = '';
+
+		// Auxiliares
+		this.pos_a = Coord();
+		this.pos_b = Coord();
 	}
 	addIO(x, y, type, third) {
 		const point = new OuterIOPoint(type, this, third);
@@ -406,29 +410,28 @@ export class Component {
 		return this;
 	}
 	hits(coord) {
-		const a = Coord();
-		const b = Coord();
-		this.getHitbox(a, b);
+		const {pos_a, pos_b} = this;
+		this.getHitbox(pos_a, pos_b);
 		const [x, y] = coord;
-		const [ax, ay] = a;
-		const [bx, by] = b;
+		const [ax, ay] = pos_a;
+		const [bx, by] = pos_b;
 		if (x < ax) return false;
 		if (y < ay) return false;
 		if (x > bx) return false;
 		if (y > by) return false;
 		return true;
 	}
-	getHitbox(start, end) {
-		const {transform, hitbox} = this;
-		const [ax, ay, bx, by] = hitbox;
-		const [x1, y1] = start.set(ax, ay).apply(transform);
-		const [x2, y2] = start.set(ax, by).apply(transform);
-		const [x3, y3] = start.set(bx, ay).apply(transform);
-		const [x4, y4] = start.set(bx, by).apply(transform);
-		start[0] = Math.min(Math.min(x1, x2), Math.min(x3, x4))
-		start[1] = Math.min(Math.min(y1, y2), Math.min(y3, y4))
-		end[0] = start[0] + bx - ax;
-		end[1] = start[1] + by - ay;
+	getHitbox(a, b) {
+		const {transform} = this;
+		const [ax, ay, bx, by] = this.hitbox;
+		const [x0, y0] = a.set(ax, ay).apply(transform);
+		const [x1, y1] = b.set(bx, by).apply(transform);
+		const x = Math.min(x0, x1);
+		const y = Math.min(y0, y1);
+		const sx = Math.abs(x0 - x1);
+		const sy = Math.abs(y0 - y1);
+		a.set(x, y);
+		b.set(x + sx, y + sy);
 		return this;
 	}
 	readInputs() { return 0; }

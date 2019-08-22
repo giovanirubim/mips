@@ -1,3 +1,5 @@
+import { Coord } from '/js/transform-2d.js';
+
 let canvas = null;
 let ctx2D = null;
 export const setCanvas = arg => {
@@ -31,3 +33,9 @@ export const setSelectionSquare = (x, y, sx, sy) => {
 	selectionSquare.sy = sy;
 };
 export const getSelectionSquare = () => ({...selectionSquare});
+
+const cursor = Coord();
+export const setCursor = (x, y) => {
+	cursor.set(x, y);
+};
+export const getCursor = () => cursor;

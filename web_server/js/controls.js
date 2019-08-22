@@ -2,7 +2,7 @@ import { Coord, Transform } from '/js/transform-2d.js';
 import { arrayRemove, calcDistance } from '/js/utils.js';
 import { MIN_DRAG_DIST, GRID } from '/js/config.js';
 import { Component, IOPoint } from '/js/circuit.js';
-import { Point } from '/js/conduction.js';
+import { Point, Wire } from '/js/conduction.js';
 import * as AtomicComponent from '/js/atomic-components.js';
 import * as Shared from '/js/shared.js';
 import * as Render from '/js/render.js';
@@ -45,6 +45,12 @@ const removeFromSelection = item => {
 	if (item.selected === false) return;
 	item.selected = false;
 	arrayRemove(selection, item);
+};
+const remove = item => {
+	if (item.selected === true) {
+		removeFromSelection(item);
+	}
+	Shared.getCircuit().remove(item);
 };
 const toggleSelection = item => {
 	if (item.selected === true) {
@@ -130,7 +136,7 @@ const removeDoubles = () => {
 		}
 		for (let i=points.length; i--;) {
 			if (i !== 0 || rootPoint !== null) {
-				circuit.removePoint(points[i]);
+				remove(points[i]);
 			} else {
 				rootPoint = points[0];
 				circuit.disconnectPoint(rootPoint);
@@ -162,7 +168,7 @@ const trim = () => {
 		}
 	}
 	for (let i=array.length; i--;) {
-		circuit.removePoint(array[i]);
+		remove(array[i]);
 	}
 };
 export const handleMousedown = mouseInfo => {
@@ -253,9 +259,12 @@ export const handleMousemove = mouseInfo => {
 		let dy = by - ay;
 		if (obj.selected === true && selection.length > 1) {
 			for (let i=selection.length; i--;) {
-				selection[i].translate(dx, dy);
+				const item = selection[i];
+				if ((item instanceof Point) || (item instanceof Component)) {
+					item.translate(dx, dy);
+				}
 			}
-		} else {
+		} else if ((obj instanceof Point) || (obj instanceof Component)) {
 			obj.translate(dx, dy);
 		}
 		prev.set(bx, by);
@@ -293,7 +302,7 @@ export const handleMouseup = mouseInfo => {
 		let [x, y] = pos1;
 		x = Math.round(x/GRID)*GRID;
 		y = Math.round(y/GRID)*GRID;
-		circuit.removePoint(point_b);
+		remove(point_b);
 		let point = circuit.getAt(x, y, {
 			point: true,
 			outerio: true,
@@ -316,7 +325,7 @@ export const handleScroll = mouseInfo => {
 	const dx = mx - (x + sx/2);
 	const dy = my - (y + sy/2);
 	Render.translateView(-dx, -dy);
-	Render.scaleView(1 - mouseInfo.scroll*0.001);
+	Render.scaleView(1 - mouseInfo.scroll*0.03);
 	Render.translateView(dx, dy);
 	Render.drawCircuit();
 };
@@ -343,7 +352,7 @@ addKeyHandler('delete', 0, 0, () => {
 	const circuit = Shared.getCircuit();
 	for (let i=selection.length; i--;) {
 		const item = selection[i];
-		circuit.remove(item);
+		remove(item);
 	}
 	Render.drawCircuit();
 });
