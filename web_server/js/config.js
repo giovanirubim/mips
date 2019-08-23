@@ -14,3 +14,4 @@ export const SELECTION_SQUARE_COLOR = 'rgba(0, 119, 255, 0.2)';
 export const SELECTED_COLOR = '#7bf';
 export const COMPONENT_LINE_COLOR = '#ddd';
 export const COMPONENT_COLOR = '#333';
+export const CURSOR_COLOR = 'rgba(127, 127, 127, 0.5)';

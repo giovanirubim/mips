@@ -14,7 +14,8 @@ import {
 	SELECTION_SQUARE_COLOR,
 	SELECTED_COLOR,
 	COMPONENT_LINE_COLOR,
-	COMPONENT_COLOR
+	COMPONENT_COLOR,
+	CURSOR_COLOR
 } from '/js/config.js';
 
 let ctx = null;
@@ -207,6 +208,22 @@ const drawComponent = item => {
 	drawHitbox(item);
 	ctx.restore();
 };
+const drawCursor = () => {
+	const [x, y] = Shared.getCursor();
+	ctx.lineWidth = 1;
+	ctx.strokeStyle = CURSOR_COLOR;
+	ctx.beginPath();
+	ctx.arc(x, y, GRID*0.5, ROT_0, ROT_4);
+	ctx.moveTo(x + GRID*0.4, y);
+	ctx.lineTo(x + GRID*0.6, y);
+	ctx.moveTo(x - GRID*0.4, y);
+	ctx.lineTo(x - GRID*0.6, y);
+	ctx.moveTo(x, y + GRID*0.4);
+	ctx.lineTo(x, y + GRID*0.6);
+	ctx.moveTo(x, y - GRID*0.4);
+	ctx.lineTo(x, y - GRID*0.6);
+	ctx.stroke();
+};
 export const translateView = (x, y) => {
 	zoom.translate(x, y);
 	transformUpdated = false;
@@ -267,5 +284,6 @@ export const drawCircuit = () => {
 		ctx.fill();
 		ctx.stroke();
 	}
+	drawCursor();
 	ctx.restore();
 };

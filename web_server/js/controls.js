@@ -32,6 +32,7 @@ const triggerKey = (key, ctrl, shift, info) => {
 	const handler = keyHandlerMap[str];
 	if (handler) {
 		handler(info);
+		Render.drawCircuit();
 		return true;
 	}
 	return false;
@@ -329,14 +330,12 @@ export const handleScroll = mouseInfo => {
 	Render.translateView(dx, dy);
 	Render.drawCircuit();
 };
-import { NotGate, OrGate, AndGate, XorGate } from '/js/atomic-components.js';
+import { NandGate } from '/js/atomic-components.js';
 export const handleDblclick = mouseInfo => {
-	const gate = new [NotGate, OrGate, AndGate, XorGate][Math.floor(Math.random()*4)];
 	let [x, y] = mouseInfo.pos1;
 	x = Math.round(x/GRID)*GRID;
 	y = Math.round(y/GRID)*GRID;
-	gate.translate(x, y);
-	Shared.getCircuit().add(gate);
+	Shared.setCursor(x, y);
 	Render.drawCircuit();
 };
 export const handleKeydown = e => {
@@ -354,7 +353,6 @@ addKeyHandler('delete', 0, 0, () => {
 		const item = selection[i];
 		remove(item);
 	}
-	Render.drawCircuit();
 });
 addKeyHandler('d', 1, 0, () => {
 	const oldToNew = {};
@@ -377,19 +375,15 @@ addKeyHandler('d', 1, 0, () => {
 	for (let i=array.length; i;) {
 		addToSelection(array[--i]);
 	}
-	Render.drawCircuit();
 });
 addKeyHandler('s', 1, 0, () => {
 	const circuit = Shared.getCircuit();
-	console.log(Encoder.encodeCircuit(circuit));
 });
 addKeyHandler('d', 0, 0, () => {
 	removeDoubles();
-	Render.drawCircuit();
 });
 addKeyHandler('t', 0, 0, () => {
 	trim();
-	Render.drawCircuit();
 });
 addKeyHandler('r', 1, 0, () => {
 	if (selection.length === 1) {
@@ -400,7 +394,42 @@ addKeyHandler('r', 1, 0, () => {
 			item.translate(-x, -y);
 			item.rotate(Math.PI/2);
 			item.translate(x, y);
-			Render.drawCircuit();
+		}
+	} else {
+		const a = Coord();
+		const b = Coord();
+		let ax, ay, bx, by;
+		for (let i=selection.length; i;) {
+			const item = selection[--i];
+			if (item instanceof Wire) {
+				continue;
+			}
+			if (item instanceof Component) {
+
+			}
 		}
 	}
 });
+addKeyHandler('a', 1, 0, () => {
+	const circuit = Shared.getCircuit();
+	const {points, iopoints, components} = circuit;
+	for (let i=points.length; i;) {
+		addToSelection(points[--i]);
+	}
+	for (let i=iopoints.length; i;) {
+		addToSelection(iopoints[--i]);
+	}
+	for (let i=components.length; i;) {
+		addToSelection(components[--i]);
+	}
+});
+addKeyHandler('a', 0, 0, () => {
+	const circuit = Shared.getCircuit();
+	const gate = new NandGate();
+	const [x, y] = Shared.getCursor();
+	gate.translate(x, y);
+	circuit.add(gate);
+});
+setTimeout(() => {
+	Shared.getCircuit().add(new NandGate());
+}, 100);

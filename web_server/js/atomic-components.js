@@ -128,6 +128,45 @@ export class AndGate extends Component {
 	}
 }
 
+export class NandGate extends Component {
+	constructor() {
+		super();
+		this.hitbox = [-15, -20, 35, 20];
+
+		const workspace = new Uint32Array(3);
+		const {buffer} = workspace;
+		this.workspace = workspace;
+
+		this.addIO(-20, -20, 'input', 'input0');
+		this.addIO(-20, +20, 'input', 'input1');
+		const output = this.addIO(40, 0, 'output', new Conductor(32, buffer, 2));
+
+		this.draw = Drawings.nandGate;
+	}
+	clone() {
+		const item = new AndGate();
+		item.transform.set(this.transform);
+		return item;
+	}
+	readInputs() {
+		const {input0, input1, workspace} = this;
+		const val0 = input0[0];
+		const val1 = input1[0];
+		let inputChanged = 0;
+		inputChanged |= val0 !== workspace[0];
+		inputChanged |= val1 !== workspace[1];
+		workspace[0] = val0;
+		workspace[1] = val1;
+		return this.inputChanged = inputChanged;
+	}
+	tic() {
+		if (this.inputChanged === 0) return 0;
+		const {workspace} = this;
+		workspace[2] = workspace[0] & workspace[1];
+		return 0;
+	}
+}
+
 export class OrGate extends Component {
 	constructor() {
 		super();

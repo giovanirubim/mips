@@ -401,6 +401,51 @@ export const andGate = (ctx, item) => {
 	ctx.fill();
 	ctx.stroke();
 };
+
+// const nand = new Drawing()
+// 	.point('a', -40, -75)
+// 	.copy('a', 'b', 75, 0)
+// 	.copy('b', 'c', 100, 0)
+// 	.mirror('c', 'd', 'y')
+// 	.mirror('b', 'e', 'y')
+// 	.mirror('a', 'f', 'y')
+// 	.val('rad', 15)
+// 	.begin()
+// 	.move('a')
+// 	.line('b')
+// 	.bezier('c', 'd', 'e')
+// 	.line('f')
+// 	.close()
+// 	.fill()
+// 	.stroke()
+// 	.begin()
+// 	.point('g', 125, 0)
+// 	.arc('g', 'rad', 0, Math.PI*2)
+// 	.stroke()
+// 	.translate(-5, 0)
+// 	.scale(0.25);
+// console.log(nand.code());
+export const nandGate = (ctx, item) => {
+	if (item.selected) {
+		ctx.strokeStyle = SELECTED_COLOR;
+		ctx.fillStyle = SELECTED_COLOR;
+	} else {
+		ctx.strokeStyle = COMPONENT_LINE_COLOR;
+		ctx.fillStyle = COMPONENT_COLOR;
+	}
+	ctx.beginPath();
+	ctx.moveTo(-11, -18.5);
+	ctx.lineTo(7.5, -18.5);
+	ctx.bezierCurveTo(32.5, -18.5, 32.5, 19, 7.5, 19);
+	ctx.lineTo(-11, 19);
+	ctx.closePath();
+	ctx.fill();
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(30, 0, 4, 0, Math.PI*2);
+	ctx.stroke();
+	// nand.inspect(ctx);
+};
 export const component = (ctx, item) => {
 	if (item.selected) {
 		ctx.strokeStyle = SELECTED_COLOR;
