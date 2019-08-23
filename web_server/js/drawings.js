@@ -403,8 +403,8 @@ export const andGate = (ctx, item) => {
 };
 
 // const nand = new Drawing()
-// 	.point('a', -40, -75)
-// 	.copy('a', 'b', 75, 0)
+// 	.point('a', -50, -75)
+// 	.copy('a', 'b', 85, 0)
 // 	.copy('b', 'c', 100, 0)
 // 	.mirror('c', 'd', 'y')
 // 	.mirror('b', 'e', 'y')
@@ -419,8 +419,9 @@ export const andGate = (ctx, item) => {
 // 	.fill()
 // 	.stroke()
 // 	.begin()
-// 	.point('g', 125, 0)
+// 	.point('g', 126, 0)
 // 	.arc('g', 'rad', 0, Math.PI*2)
+// 	.fill()
 // 	.stroke()
 // 	.translate(-5, 0)
 // 	.scale(0.25);
@@ -434,17 +435,17 @@ export const nandGate = (ctx, item) => {
 		ctx.fillStyle = COMPONENT_COLOR;
 	}
 	ctx.beginPath();
-	ctx.moveTo(-11, -18.5);
+	ctx.moveTo(-13.5, -18.5);
 	ctx.lineTo(7.5, -18.5);
 	ctx.bezierCurveTo(32.5, -18.5, 32.5, 19, 7.5, 19);
-	ctx.lineTo(-11, 19);
+	ctx.lineTo(-13.5, 19);
 	ctx.closePath();
 	ctx.fill();
 	ctx.stroke();
 	ctx.beginPath();
-	ctx.arc(30, 0, 4, 0, Math.PI*2);
+	ctx.arc(30.5, 0, 4, 0, 6.283185307179586);
+	ctx.fill();
 	ctx.stroke();
-	// nand.inspect(ctx);
 };
 export const component = (ctx, item) => {
 	if (item.selected) {

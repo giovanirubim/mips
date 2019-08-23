@@ -140,11 +140,12 @@ export class NandGate extends Component {
 		this.addIO(-20, -20, 'input', 'input0');
 		this.addIO(-20, +20, 'input', 'input1');
 		const output = this.addIO(40, 0, 'output', new Conductor(32, buffer, 2));
+		output.conductor[0] = ~0;
 
 		this.draw = Drawings.nandGate;
 	}
 	clone() {
-		const item = new AndGate();
+		const item = new NandGate();
 		item.transform.set(this.transform);
 		return item;
 	}
@@ -162,7 +163,7 @@ export class NandGate extends Component {
 	tic() {
 		if (this.inputChanged === 0) return 0;
 		const {workspace} = this;
-		workspace[2] = workspace[0] & workspace[1];
+		workspace[2] = ~(workspace[0] & workspace[1]);
 		return 0;
 	}
 }
