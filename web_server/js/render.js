@@ -12,10 +12,12 @@ import {
 	SELECTION_SQUARE_BORDER_WIDTH,
 	SELECTION_SQUARE_BORDER_COLOR,
 	SELECTION_SQUARE_COLOR,
-	SELECTED_COLOR,
+	SELECTED_FILL_COLOR,
+	SELECTED_STROKE_COLOR,
 	COMPONENT_LINE_COLOR,
 	COMPONENT_COLOR,
-	CURSOR_COLOR
+	CURSOR_COLOR,
+	COMPONENT_LINE_WIDTH
 } from '/js/config.js';
 
 let ctx = null;
@@ -35,7 +37,7 @@ const pos_a = Coord();
 const pos_b = Coord();
 
 // Matrizes de transformação
-const zoom = Transform().set(2, 0, 0, 2, 0, 0);
+const zoom = Transform().set(2.2, 0, 0, 2.2, 0, 0);
 const screenMap = Transform();
 const transform = Transform();
 
@@ -75,7 +77,7 @@ const valueToColor = value => {
 };
 const drawPoint = point => {
 	if (point.selected === true) {
-		ctx.fillStyle = SELECTED_COLOR;
+		ctx.fillStyle = SELECTED_STROKE_COLOR;
 	} else {
 		ctx.fillStyle = valueToColor(point.val());
 	}
@@ -91,7 +93,7 @@ const drawPoint = point => {
 const drawWire = wire => {
 	const {a, b} = wire;
 	if (wire.selected === true) {
-		ctx.strokeStyle = SELECTED_COLOR;
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
 	} else {
 		ctx.strokeStyle = valueToColor(a.val());
 	}
@@ -172,16 +174,35 @@ const drawOuterPoint = point => {
 	ctx.lineWidth = 1;
 	ctx.setLineDash([IO_POINT_RADIUS*ROT_1*0.5]);
 	if (point.component.selected === true) {
-		ctx.strokeStyle = SELECTED_COLOR;
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
 	} else if (point.type === 'input') {
-		ctx.strokeStyle = '#f70';
-	} else {
 		ctx.strokeStyle = '#07f';
+	} else {
+		ctx.strokeStyle = '#f70';
 	}
 	ctx.beginPath();
 	ctx.arc(0, 0, IO_POINT_RADIUS, ROT_0 + ROT_1*0.25, ROT_4 + ROT_1*0.25);
 	ctx.stroke();
 	ctx.restore();
+};
+const drawInnerPoint = point => {
+	ctx.lineWidth = 1;
+	ctx.setLineDash([IO_POINT_RADIUS*ROT_1*0.5]);
+	if (point.selected === true) {
+		ctx.fillStyle = ctx.strokeStyle = SELECTED_STROKE_COLOR;
+	} else if (point.type === 'input') {
+		ctx.fillStyle = ctx.strokeStyle = '#07f';
+	} else {
+		ctx.fillStyle = ctx.strokeStyle = '#f70';
+	}
+	const [x, y] = point.coord;
+	ctx.beginPath();
+	ctx.arc(x, y, IO_POINT_RADIUS, ROT_0 + ROT_1*0.25, ROT_4 + ROT_1*0.25);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(x, y, POINT_RADIUS, ROT_0 + ROT_1*0.25, ROT_4 + ROT_1*0.25);
+	ctx.fill();
+	ctx.setLineDash([]);
 };
 const drawHitbox = item => {
 	const {hitbox} = item;
@@ -205,7 +226,7 @@ const drawComponent = item => {
 	for (let i=outerPoints.length; i--;) {
 		drawOuterPoint(outerPoints[i]);
 	}
-	drawHitbox(item);
+	// drawHitbox(item);
 	ctx.restore();
 };
 const drawCursor = () => {
@@ -241,6 +262,11 @@ export const trackPosition = (pos) => {
 	updateTransform();
 	return pos.reverse(transform);
 };
+export const projectPosition = (pos) => {
+	loadViewport();
+	updateTransform();
+	return pos.apply(transform);
+};
 export const getZoom = dst => {
 	dst.set(zoom);
 	return dst;
@@ -249,6 +275,10 @@ export const setZoom = src => {
 	zoom.set(src);
 	transformUpdated = false;
 	return src;
+};
+export const getScale = () => {
+	const [x, y] = zoom;
+	return Math.sqrt(x*x + y*y);
 };
 export const drawCircuit = () => {
 	loadViewport();
@@ -260,9 +290,12 @@ export const drawCircuit = () => {
 	useTransform();
 	calcCurrentScale();
 	drawGrid();
-	const {points, wires, components} = circuit;
+	const {points, iopoints, wires, components} = circuit;
 	ctx.lineCap = 'round';
 	ctx.lineJoin = 'round';
+	for (let i=iopoints.length; i--;) {
+		drawInnerPoint(iopoints[i]);
+	}
 	ctx.lineWidth = WIRE_WIDTH;
 	for (let i=wires.length; i--;) {
 		drawWire(wires[i]);
@@ -270,6 +303,7 @@ export const drawCircuit = () => {
 	for (let i=points.length; i--;) {
 		drawPoint(points[i]);
 	}
+	ctx.lineWidth = COMPONENT_LINE_WIDTH;
 	for (let i=0; i<components.length; ++i) {
 		drawComponent(components[i]);
 	}

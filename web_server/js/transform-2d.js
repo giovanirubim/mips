@@ -75,6 +75,16 @@ class CoordinateTransformation extends Float64Array {
 		this[5] = Math.round(this[5]);
 		return this;
 	}
+	clone() {
+		const clone = new CoordinateTransformation();
+		clone[0] = this[0];
+		clone[1] = this[1];
+		clone[2] = this[2];
+		clone[3] = this[3];
+		clone[4] = this[4];
+		clone[5] = this[5];
+		return clone;
+	}
 }
 class Coordinate extends Float64Array {
 	constructor(buffer, index) {
@@ -125,6 +135,12 @@ class Coordinate extends Float64Array {
 		this[0] = Math.round(this[0]);
 		this[1] = Math.round(this[1]);
 		return this;
+	}
+	clone() {
+		const clone = new Coordinate();
+		clone[0] = this[0];
+		clone[1] = this[1];
+		return clone;
 	}
 }
 export const Coord = () => new Coordinate();

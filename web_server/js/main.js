@@ -63,7 +63,9 @@ const bindCanvas = () => {
 	});
 	canvas.addEventListener('mousemove', e => {
 		if (mouseInfo.button === null) return;
-		if ((e.buttons & buttonToMask(mouseInfo.button)) === 0) return;
+		if ((e.buttons & buttonToMask(mouseInfo.button)) === 0) {
+			Controls.handleMouseup(mouseInfo);
+		}
 		const {scrPos1, pos1} = mouseInfo;
 		const x = e.offsetX;
 		const y = e.offsetY;

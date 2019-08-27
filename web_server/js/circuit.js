@@ -118,6 +118,12 @@ export class Circuit {
 		this.points.push(point);
 		return point;
 	}
+	createIOPoint(type, x, y) {
+		const point = new InnerIOPoint(type);
+		point.coord.set(x, y);
+		this.iopoints.push(point);
+		return point;
+	}
 
 	// Função para ser usada apenas na criação automática de componentes, pois é possível assegurar
 	// que os condutores serão atualizados posteriormente. Não deve ser usada em ações originadas
@@ -172,26 +178,14 @@ export class Circuit {
 		}
 		return null;
 	}
-	getAt(x, y, {point, innerio, outerio, component, wire}) {
-		if (point) {
-			const item = this.getPointAt(x, y);
-			if (item !== null) return item;
-		}
-		if (innerio) {
-			const item = this.getInnerIOAt(x, y);
-			if (item !== null) return item;
-		}
-		if (component) {
-			const item = this.getComponentAt(x, y);
-			if (item !== null) return item;
-		}
-		if (outerio) {
-			const item = this.getOuterIOAt(x, y);
-			if (item !== null) return item;
-		}
-		if (wire) {
-			const item = this.getWireAt(x, y);
-			if (item !== null) return item;
+	getInnerIOAt(x, y) {
+		const {iopoints} = this;
+		for (let i=iopoints.length; i;) {
+			const point = iopoints[--i];
+			const [px, py] = point.coord;
+			if (calcDistance(px, py, x, y) <= POINT_PICK_RADIUS) {
+				return point;
+			}
 		}
 		return null;
 	}
@@ -241,9 +235,34 @@ export class Circuit {
 		}
 		return null;
 	}
-	getPointsIn(ax, ay, bx, by) {
+	getAt(x, y, {point, innerio, outerio, component, wire}) {
+		if (point) {
+			const item = this.getPointAt(x, y);
+			if (item !== null) return item;
+		}
+		if (innerio) {
+			const item = this.getInnerIOAt(x, y);
+			if (item !== null) return item;
+		}
+		if (component) {
+			const item = this.getComponentAt(x, y);
+			if (item !== null) return item;
+		}
+		if (outerio) {
+			const item = this.getOuterIOAt(x, y);
+			if (item !== null) return item;
+		}
+		if (wire) {
+			const item = this.getWireAt(x, y);
+			if (item !== null) return item;
+		}
+		return null;
+	}
+	getPointsIn(ax, ay, bx, by, array) {
 		const {points} = this;
-		const array = [];
+		if (array === undefined) {
+			array = [];
+		}
 		for (let i=points.length; i;) {
 			const point = points[--i];
 			const [x, y] = point.coord;
@@ -255,9 +274,11 @@ export class Circuit {
 		}
 		return array;
 	}
-	getComponentsIn(ax, ay, bx, by) {
+	getComponentsIn(ax, ay, bx, by, array) {
 		const {components, pos_a, pos_b} = this;
-		const array = [];
+		if (array === undefined) {
+			array = [];
+		}
 		for (let i=components.length; i;) {
 			const item = components[--i];
 			item.getHitbox(pos_a, pos_b);
@@ -271,16 +292,34 @@ export class Circuit {
 		}
 		return array;
 	}
-	getInnerIOAt(x, y) {
+	getInnerIOPointsIn(ax, ay, bx, by, array) {
 		const {iopoints} = this;
+		if (array === undefined) {
+			array = [];
+		}
 		for (let i=iopoints.length; i;) {
 			const point = iopoints[--i];
-			const [px, py] = point.coord;
-			if (calcDistance(px, py, x, y) <= POINT_PICK_RADIUS) {
-				return point;
-			}
+			const [x, y] = point.coord;
+			if (x < ax) continue;
+			if (y < ay) continue;
+			if (x > bx) continue;
+			if (y > by) continue;
+			array.push(point);
 		}
-		return null;
+		return array;
+	}
+	getIn(ax, ay, bx, by, {point, innerio, component}) {
+		const array = [];
+		if (component) {
+			this.getComponentsIn(ax, ay, bx, by, array);
+		}
+		if (point) {
+			this.getPointsIn(ax, ay, bx, by, array);
+		}
+		if (innerio) {
+			this.getInnerIOPointsIn(ax, ay, bx, by, array);
+		}
+		return array;
 	}
 	pointExists(point) {
 		return this.points.indexOf(point) !== -1;
@@ -303,6 +342,16 @@ export class Circuit {
 	}
 	removePoint(point) {
 		if (arrayRemove(this.points, point) === true) {
+			const neighbors = point.getNeighbors();
+			const {wires} = point;
+			while (wires.length !== 0) {
+				this.removeWire(wires[0]);
+			}
+		}
+		return this;
+	}
+	removeInnerIOPoint(point) {
+		if (arrayRemove(this.iopoints, point) === true) {
 			const neighbors = point.getNeighbors();
 			const {wires} = point;
 			while (wires.length !== 0) {
@@ -338,6 +387,8 @@ export class Circuit {
 			this.removeComponent(item);
 		} else if (item instanceof Wire) {
 			this.removeWire(item);
+		} else if (item instanceof InnerIOPoint) {
+			this.removeInnerIOPoint(item);
 		} else if (item instanceof Point) {
 			this.removePoint(item);
 		}

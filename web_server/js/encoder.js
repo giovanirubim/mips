@@ -1,5 +1,22 @@
 import { Coord } from '/js/transform-2d.js';
-export const encodeCircuit = circuit => {
+import { OuterIOPoint } from '/js/circuit.js';
+const getReachedComponents = (root, visited) => {
+	const {id} = root;
+	if (visited[id]) return;
+	visited[id] = true;
+	if (root instanceof OuterIOPoint) {
+		const {component} = root;
+		const {id} = component;
+		if (!visited[id]) {
+			visited[id] = true;
+		}
+	}
+	const {wires} = root;
+	wires.forEach(wire => {
+		getReachedComponents(wire.other(root), visited);
+	});
+};
+export const encodeCircuit = (circuit, className) => {
 	let code = '';
 	let tabs = '';
 	const coord = Coord();
@@ -34,6 +51,26 @@ export const encodeCircuit = circuit => {
 		} else {
 			return newIdMap[item.id];
 		}
+	};
+	add(`export class ${ className } extends ComposedComponent {`);
+	add(`constructor() {`);
+	add(`super();`);
+	add('const circuit = new Circuit();');
+	add('const inputLayer = [];');
+	add('const nonInput = [];');
+	add('this.circuit = circuit;');
+	add('this.inputLayer = inputLayer;');
+	add('this.nonInput = nonInput;');
+	const visited = {};
+	for (let i=iopoints.length; i--;) {
+		const point = iopoints[i];
+		const id = giveId(point);
+		const {type} = point;
+		point.pos(coord);
+		add(`const ${ id } = circuit.createIOPoint('${ type }', ${ coord.join(', ') });`);
+		if (type === 'input') {
+			getReachedComponents(point, visited);
+		}
 	}
 	for (let i=points.length; i--;) {
 		const point = points[i];
@@ -48,6 +85,11 @@ export const encodeCircuit = circuit => {
 		add(`circuit.add(${ id });`);
 		item.pos(coord);
 		add(`${ id }.translate(${ coord.join(', ') });`);
+		if (visited[item.id]) {
+			add(`inputLayer.push(${ id });`);
+		} else {
+			add(`nonInput.push(${ id });`);
+		}
 	}
 	for (let i=wires.length; i--;) {
 		const wire = wires[i];
@@ -56,5 +98,7 @@ export const encodeCircuit = circuit => {
 		const id_b = getNewId(b);
 		add(`circuit.createWire(${ id_a }, ${ id_b });`);
 	}
+	add('}');
+	add('}');
 	return code;
 };

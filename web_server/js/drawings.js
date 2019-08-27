@@ -1,5 +1,6 @@
 import {
-	SELECTED_COLOR,
+	SELECTED_FILL_COLOR,
+	SELECTED_STROKE_COLOR,
 	COMPONENT_LINE_COLOR,
 	COMPONENT_COLOR
 } from '/js/config.js';
@@ -125,6 +126,7 @@ class Drawing {
 		return this;
 	}
 	inspect(ctx) {
+		ctx.lineWidth = 1;
 		ctx.fillStyle = '#037';
 		ctx.strokeStyle = '#fff';
 		this.array.forEach(item => {
@@ -159,7 +161,7 @@ class Drawing {
 			const {x, y} = point;
 			ctx.fillStyle = '#f70';
 			ctx.beginPath();
-			ctx.arc(x, y, 3, 0, Math.PI*2);
+			ctx.arc(x, y, 1, 0, Math.PI*2);
 			ctx.fill();
 			ctx.fillStyle = '#fff';
 			ctx.fillText(id, x, y - 6);
@@ -242,8 +244,8 @@ class Drawing {
 }
 export const notGate = (ctx, item) => {
 	if (item.selected) {
-		ctx.strokeStyle = SELECTED_COLOR;
-		ctx.fillStyle = SELECTED_COLOR;
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
+		ctx.fillStyle = SELECTED_FILL_COLOR;
 	} else {
 		ctx.strokeStyle = COMPONENT_LINE_COLOR;
 		ctx.fillStyle = COMPONENT_COLOR;
@@ -275,8 +277,8 @@ export const notGate = (ctx, item) => {
 };
 export const xorGate = (ctx, item) => {
 	if (item.selected) {
-		ctx.strokeStyle = SELECTED_COLOR;
-		ctx.fillStyle = SELECTED_COLOR;
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
+		ctx.fillStyle = SELECTED_FILL_COLOR;
 	} else {
 		ctx.strokeStyle = COMPONENT_LINE_COLOR;
 		ctx.fillStyle = COMPONENT_COLOR;
@@ -325,8 +327,8 @@ export const xorGate = (ctx, item) => {
 };
 export const orGate = (ctx, item) => {
 	if (item.selected) {
-		ctx.strokeStyle = SELECTED_COLOR;
-		ctx.fillStyle = SELECTED_COLOR;
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
+		ctx.fillStyle = SELECTED_FILL_COLOR;
 	} else {
 		ctx.strokeStyle = COMPONENT_LINE_COLOR;
 		ctx.fillStyle = COMPONENT_COLOR;
@@ -368,8 +370,8 @@ export const orGate = (ctx, item) => {
 };
 export const andGate = (ctx, item) => {
 	if (item.selected) {
-		ctx.strokeStyle = SELECTED_COLOR;
-		ctx.fillStyle = SELECTED_COLOR;
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
+		ctx.fillStyle = SELECTED_FILL_COLOR;
 	} else {
 		ctx.strokeStyle = COMPONENT_LINE_COLOR;
 		ctx.fillStyle = COMPONENT_COLOR;
@@ -428,8 +430,8 @@ export const andGate = (ctx, item) => {
 // console.log(nand.code());
 export const nandGate = (ctx, item) => {
 	if (item.selected) {
-		ctx.strokeStyle = SELECTED_COLOR;
-		ctx.fillStyle = SELECTED_COLOR;
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
+		ctx.fillStyle = SELECTED_FILL_COLOR;
 	} else {
 		ctx.strokeStyle = COMPONENT_LINE_COLOR;
 		ctx.fillStyle = COMPONENT_COLOR;
@@ -447,10 +449,61 @@ export const nandGate = (ctx, item) => {
 	ctx.fill();
 	ctx.stroke();
 };
+// const nor = new Drawing()
+// 	.point('a', -110, -80)
+// 	.copy('a', 'b', 50, 0)
+// 	.copy('b', 'c', 40, 0)
+// 	.copy('c', 'd', 45, 30)
+// 	.point('e', 60, 0)
+// 	.mirror('d', 'f', 'y')
+// 	.mirror('c', 'g', 'y')
+// 	.mirror('b', 'h', 'y')
+// 	.mirror('a', 'i', 'y')
+// 	.begin()
+// 	.move('a')
+// 	.line('b')
+// 	.bezier('c', 'd', 'e')
+// 	.bezier('f', 'g', 'h')
+// 	.line('i')
+// 	.copy('i', 'j', 20, -50)
+// 	.mirror('j', 'k', 'y')
+// 	.bezier('j', 'k', 'a')
+// 	.fill()
+// 	.stroke()
+// 	.begin()
+// 	.val('rad', 17)
+// 	.copy('e', 'l', 20, 0)
+// 	.arc('l', 'rad', 0, Math.PI*2)
+// 	.fill()
+// 	.stroke()
+// 	.translate(50, 0)
+// 	.scale(0.23);
+export const norGate = (ctx, item) => {
+	if (item.selected) {
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
+		ctx.fillStyle = SELECTED_FILL_COLOR;
+	} else {
+		ctx.strokeStyle = COMPONENT_LINE_COLOR;
+		ctx.fillStyle = COMPONENT_COLOR;
+	}
+	ctx.beginPath();
+	ctx.moveTo(-14, -18.5);
+	ctx.lineTo(-2.5, -18.5);
+	ctx.bezierCurveTo(7, -18.5, 17.5, -11.5, 25.5, 0);
+	ctx.bezierCurveTo(17.5, 11.5, 7, 18.5, -2.5, 18.5);
+	ctx.lineTo(-14, 18.5);
+	ctx.bezierCurveTo(-9, 7, -9, -7, -14, -18.5);
+	ctx.fill();
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(30, 0, 4, 0, Math.PI*2);
+	ctx.fill();
+	ctx.stroke();
+};
 export const component = (ctx, item) => {
 	if (item.selected) {
-		ctx.strokeStyle = SELECTED_COLOR;
-		ctx.fillStyle = SELECTED_COLOR;
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
+		ctx.fillStyle = SELECTED_FILL_COLOR;
 	} else {
 		ctx.strokeStyle = COMPONENT_LINE_COLOR;
 		ctx.fillStyle = COMPONENT_COLOR;
