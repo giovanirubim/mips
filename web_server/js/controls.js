@@ -455,7 +455,7 @@ addKeyHandler('d', 1, 0, () => {
 });
 addKeyHandler('s', 1, 0, () => {
 	const circuit = Shared.getCircuit();
-	let code = Encoder.encodeCircuit(circuit);
+	let code = Encoder.encodeCircuit(circuit, 'Untitled');
 	console.log(code);
 });
 addKeyHandler('d', 0, 0, () => {
@@ -571,3 +571,6 @@ addKeyHandler('l', 0, 0, () => {
 		selection[i].label = label;
 	}
 });
+for (let name in AtomicComponent) {
+	window[name] = AtomicComponent[name];
+}

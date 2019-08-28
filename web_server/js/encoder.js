@@ -1,3 +1,4 @@
+import { GRID } from '/js/config.js';
 import { Coord } from '/js/transform-2d.js';
 import { OuterIOPoint } from '/js/circuit.js';
 const getReachedComponents = (root, visited) => {
@@ -15,6 +16,58 @@ const getReachedComponents = (root, visited) => {
 	wires.forEach(wire => {
 		getReachedComponents(wire.other(root), visited);
 	});
+};
+const organizeIOPoints = (points, add) => {
+	let x0, y0, x1, y1;
+	x0 = Infinity;
+	y0 = Infinity;
+	x1 = -Infinity;
+	y1 = -Infinity;
+	points.forEach(point => {
+		const [x, y] = point.coord;
+		x0 = Math.min(x0, x);
+		y0 = Math.min(y0, y);
+		x1 = Math.max(x1, x);
+		y1 = Math.max(y1, y);
+	});
+	let sx = x1 - x0;
+	let sy = y1 - y0;
+	let dif = (sx - sy)*0.5;
+	if (dif > 0) {
+		y0 -= dif;
+		y1 += dif;
+	} else if (dif < 0) {
+		x0 += dif;
+		x1 -= dif;
+	}
+	const queues = [[], [], [], []];
+	points.forEach(point => {
+		const [x, y] = point.coord;
+		let d0 = y - y0;
+		let d1 = x1 - x;
+		let d2 = y1 - y;
+		let d3 = x - x0;
+		let d = Math.min(Math.min(d0, d1), Math.min(d2, d3));
+		if (d == d0) {
+			queues[0].push(point);
+		} else if (d == d1) {
+			queues[1].push(point);
+		} else if (d == d2) {
+			queues[2].push(point);
+		} else if (d == d3) {
+			queues[3].push(point);
+		}
+	});
+	const calcLength = n => (n + 2 - (n&1))*GRID;
+	queues[0].sort((a, b) => a.coord.x - b.coord.x);
+	queues[1].sort((a, b) => a.coord.y - b.coord.y);
+	queues[2].sort((a, b) => a.coord.x - b.coord.x);
+	queues[3].sort((a, b) => a.coord.y - b.coord.y);
+	sx = Math.max(queues[0].length, queues[2].length);
+	sy = Math.max(queues[1].length, queues[3].length);
+	sx = calcLength(sx);
+	sy = calcLength(sy);
+	return { queues, sx, sy };
 };
 export const encodeCircuit = (circuit, className) => {
 	let code = '';
@@ -98,6 +151,14 @@ export const encodeCircuit = (circuit, className) => {
 		const id_b = getNewId(b);
 		add(`circuit.createWire(${ id_a }, ${ id_b });`);
 	}
+	const { queues, sx, sy } = organizeIOPoints(iopoints, add);
+	let x0 = -sx*0.5;
+	let y0 = -sy*0.5;
+	let x1 = x0 + sx;
+	let y1 = y0 + sy;
+	queues[0].forEach(point => {
+
+	});
 	add('}');
 	add('}');
 	return code;
