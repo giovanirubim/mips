@@ -215,7 +215,7 @@ const removeDoubles = () => {
 		for (let i=points.length; i--;) {
 			const point = points[i];
 			if (point !== rootPoint) {
-				circuit.removePoint(point);
+				remove(point);
 			}
 		}
 
@@ -227,6 +227,7 @@ const removeDoubles = () => {
 	}
 };
 const duplicateSelection = () => {
+	const array = selection.slice();
 	const circuit = Shared.getCircuit();
 	const result = [];
 	const otherMap = {};
@@ -234,12 +235,70 @@ const duplicateSelection = () => {
 		otherMap[a.id] = b;
 		otherMap[b.id] = a;
 	};
-	const other = item => otherMap[item.id];
-	const wires = [];
+	const getClone = item => otherMap[item.id];
+	const queue = [];
+	const isQueued = {};
+	const addToQueue = point => {
+		isQueued[point.id] = true;
+		pushUnique(queue, point);
+	};
+	const duplicateComponent = item => {
+		const clone = item.clone();
+		circuit.add(clone);
+		addToSelection(clone);
+		const a = item.outerPoints;
+		const b = clone.outerPoints;
+		for (let i=b.length; i--;) {
+			addToQueue(a[i]);
+			relate(a[i], b[i]);
+		}
+	};
 	const duplicatePoint = point => {
+		const [x, y] = point.coord;
+		const clone = circuit.createPoint(x, y);
+		relate(point, clone);
+		addToSelection(clone);
+		addToQueue(point);
 	};
-	const duplicateComponent = point => {
+	const duplicateIOPoint = point => {
+		const [x, y] = point.coord;
+		const {type} = point;
+		const clone = circuit.createIOPoint(type, x, y);
+		relate(point, clone);
+		addToSelection(clone);
+		addToQueue(point);
 	};
+	clearSelection();
+	for (let i=array.length; i--;) {
+		const item = array[i];
+		if (item instanceof Component) {
+			duplicateComponent(item);
+		} else if (item instanceof IOPoint) {
+			duplicateIOPoint(item);
+		} else if (item instanceof Point) {
+			duplicatePoint(item);
+		}
+	}
+	const wireCloned = {};
+	for (let i=queue.length; i--;) {
+		const point = queue[i];
+		const {wires} = point;
+		for (let i=wires.length; i--;) {
+			const wire = wires[i];
+			const {id} = wire;
+			const other = wire.other(point);
+			if (wireCloned[id] === true) {
+				continue;
+			}
+			if (isQueued[other.id] !== true) {
+				continue;
+			}
+			const a = getClone(wire.a);
+			const b = getClone(wire.b);
+			circuit.createWire(a, b);
+			wireCloned[id] = true;
+		}
+	}
 };
 const trim = () => {
 	const circuit = Shared.getCircuit();
@@ -443,7 +502,7 @@ export const handleScroll = mouseInfo => {
 		const dx = mx - (x + sx/2);
 		const dy = my - (y + sy/2);
 		Render.translateView(-dx, -dy);
-		Render.scaleView(1 - mouseInfo.scroll*0.03);
+		Render.scaleView(1 - mouseInfo.scroll*0.001);
 		Render.translateView(dx, dy);
 		Render.drawCircuit();
 	}
