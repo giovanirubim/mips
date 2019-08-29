@@ -1,5 +1,5 @@
 import { Coord, Transform } from '/js/transform-2d.js';
-import { arrayRemove, calcDistance } from '/js/utils.js';
+import { arrayRemove, pushUnique, calcDistance } from '/js/utils.js';
 import { Point, Wire } from '/js/conduction.js';
 import { IOPoint } from '/js/circuit.js';
 import { Component } from '/js/component.js';
@@ -24,8 +24,8 @@ const ES_TRANSLATING_OBJECT = 0x6;
 const ES_ROTATING_VIEW = 0x7;
 const selection = [];
 const prev = Coord();
-const history = [];
 const keyHandlerMap = {};
+const circuits = [];
 
 let eventState = ES_NONE;
 let animation = null;
@@ -43,9 +43,6 @@ const setEvent = code => {
 };
 const eventEnded = () => {
 	setEvent(ES_NONE);
-};
-const recordAction = action => {
-	history.push(action);
 };
 const keyEventToStr = (key, ctrl, shift) => {
 	return `${key}-${ ctrl|0 }-${ shift|0 }`;
@@ -133,71 +130,116 @@ const handleClick = mouseInfo => {
 	Render.drawCircuit();
 };
 const removeDoubles = () => {
-	const coordMap = {};
+	const circuit = Shared.getCircuit();
 	const coord = Coord();
+
+	// Mapa que usa a coordenada como chave e referencia o grupo daquela coordenada
+	const map = {};
+
+	// Contém todos os grupos com pelo menos 2 elementos
+	// Um grupo é um vetor de pontos que estão na mesma coordenada
 	const groups = [];
-	const add = item => {
-		const pos = item.pos(coord).join(',');
-		const group = coordMap[pos] || (coordMap[pos]=[]);
-		group.push(item);
+
+	// Adiciona um ponto em seu grupo
+	const add = point => {
+		point.pos(coord);
+		const key = coord.round().join(',');
+
+		// Se não existe um grupo, cria
+		const group = map[key] || (map[key] = []);
+
+		group.push(point);
+
+		// Grupo ao conter dois pontos vai para o vetor de grupos
 		if (group.length === 2) {
-			group.x = pos[0];
-			group.y = pos[1];
 			groups.push(group);
 		}
 	};
-	const circuit = Shared.getCircuit();
-	const {components, points, iopoints} = circuit;
-	for (let i=components.length; i--;) {
-		const {outerPoints} = components[i];
-		for (let i=outerPoints.length; i--;) {
-			add(outerPoints[i]);
-		}
-	}
+	const {points, iopoints, components} = circuit;
+
+	// Adiciona todos os pontos e i/o's em seus grupos
 	for (let i=points.length; i--;) {
 		add(points[i]);
 	}
 	for (let i=iopoints.length; i--;) {
 		add(iopoints[i]);
 	}
+	for (let i=components.length; i--;) {
+		const points = components[i].outerPoints;
+		for (let i=points.length; i--;) {
+			add(points[i]);
+		}
+	}
+
 	for (let i=groups.length; i--;) {
 		const group = groups[i];
+
+		// Pontos de fiação
 		const points = [];
+
+		// Pontos de entrada/saída
 		const iopoints = [];
+
+		// Vizinhos dos pontos que estão na mesma coordenada
 		const neighbors = [];
-		let rootPoint = null;
+
 		for (let i=group.length; i--;) {
 			const point = group[i];
-			point.getNeighbors(neighbors);
+
+			// Adiciona seus vizinhos no vetor de vizinhos sem repetição
+			const array = point.getNeighbors([]);
+			for (let i=array.length; i--;) {
+				pushUnique(neighbors, array[i]);
+			}
+
+			// Insere no respectivo vetor
 			if (point instanceof IOPoint) {
-				rootPoint = point;
-				neighbors.push(point);
-				circuit.disconnectPoint(point);
+				iopoints.push(point);
 			} else {
 				points.push(point);
 			}
+
+			// Remove todos os fios conectando o ponto
+			circuit.disconnectPoint(point);
 		}
+
+		// Garante que nenhum ponto que está na coordenada apareça no vetor de vizinhos
+		for (let i=group.length; i--;) {
+			arrayRemove(neighbors, group[i]);
+		}
+
+		// Ponto ao qual todos os vizinhos serão conectados
+		const rootPoint = iopoints.length === 0 ? points[0] : iopoints[0];
+
+		// Remove todos os pontos (a não ser que seja a raiz)
 		for (let i=points.length; i--;) {
-			if (i !== 0 || rootPoint !== null) {
-				remove(points[i]);
-			} else {
-				rootPoint = points[0];
-				circuit.disconnectPoint(rootPoint);
+			const point = points[i];
+			if (point !== rootPoint) {
+				circuit.removePoint(point);
 			}
 		}
-		const idMap = {};
-		for (let i=neighbors.length; i--;) {
+
+		// Connecta todos os vizinhos ao ponto raiza
+		for (let i=neighbors.length; i--;) {	
 			const point = neighbors[i];
-			const {id} = point;
-			if (idMap[id] === true) {
-				continue;
-			}
-			idMap[id] = true;
-			if (circuit.pointExists(point) === true && point !== rootPoint) {
-				circuit.createWire(point, rootPoint);
-			}
+			circuit.createWire(point, rootPoint);
 		}
 	}
+};
+const duplicateSelection = () => {
+	const circuit = Shared.getCircuit();
+	const result = [];
+	const otherMap = {};
+	const relate = (a, b) => {
+		otherMap[a.id] = b;
+		otherMap[b.id] = a;
+	};
+	const other = item => otherMap[item.id];
+	const wires = [];
+	const duplicatePoint = point => {
+	};
+	const duplicateComponent = point => {
+	};
 };
 const trim = () => {
 	const circuit = Shared.getCircuit();
@@ -409,9 +451,16 @@ export const handleScroll = mouseInfo => {
 export const handleDblclick = mouseInfo => {
 	if (eventState !== ES_NONE) return;
 	let [x, y] = mouseInfo.pos1;
-	x = Math.round(x/GRID)*GRID;
-	y = Math.round(y/GRID)*GRID;
-	Shared.setCursor(x, y);
+	const circuit = Shared.getCircuit();
+	let component = circuit.getAt(x, y, { component: true });
+	if (component !== null && component.circuit) {
+		circuits.push(circuit);
+		Shared.setCircuit(component.circuit);
+	} else {
+		x = Math.round(x/GRID)*GRID;
+		y = Math.round(y/GRID)*GRID;
+		Shared.setCursor(x, y);
+	}
 	Render.drawCircuit();
 };
 export const handleKeydown = e => {
@@ -435,31 +484,12 @@ addKeyHandler('d', 1, 0, () => {
 	const oldToNew = {};
 	const newToOld = {};
 	const array = [];
-	const circuit = Shared.getCircuit();
-	for (let i=selection.length; i--;) {
-		const item = selection[i];
-		if (item instanceof Component) {
-			const n = item.clone();
-			if (n) {
-				circuit.add(n);
-				newToOld[n.id] = item;
-				oldToNew[item.id] = n;
-				array.push(n);
-			}
-		}
-	}
-	clearSelection();
-	for (let i=array.length; i;) {
-		addToSelection(array[--i]);
-	}
+	duplicateSelection();
 });
 addKeyHandler('s', 1, 0, () => {
 	const circuit = Shared.getCircuit();
 	let code = Encoder.encodeCircuit(circuit, 'Untitled');
 	console.log(code);
-});
-addKeyHandler('d', 0, 0, () => {
-	removeDoubles();
 });
 addKeyHandler('t', 0, 0, () => {
 	trim();
@@ -570,4 +600,15 @@ addKeyHandler('l', 0, 0, () => {
 	for (let i=selection.length; i--;) {
 		selection[i].label = label;
 	}
+});
+addKeyHandler('pageup', 0, 0, () => {
+	if (circuits.length === 0) {
+		return;
+	}
+	const index = circuits.length - 1;
+	const circuit = circuits.splice(index, 1)[0];
+	Shared.setCircuit(circuit);
+});
+addKeyHandler('f1', 0, 0, () => {
+	console.log(selection[0]);
 });

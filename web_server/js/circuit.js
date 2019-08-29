@@ -145,15 +145,28 @@ export class Circuit {
 		this.wires.push(wire);
 		return wire;
 	}
-
 	createHiddenWire(a, b) {
 		const wire = this.createWire(a, b);
 		if (wire === false) return false;
 		arrayRemove(this.wires, wire);
 		this.hiddenWires.push(wire);
+		wire.hidden = true;
 		return wire;
 	}
-
+	disconnectPoint(point) {
+		const {wires} = point;
+		const array = [];
+		for (let i=wires.length; i--;) {
+			const wire = wires[i];
+			if (wire.hidden === false) {
+				array.push(wire);
+			}
+		}
+		for (let i=array.length; i--;) {
+			this.removeWire(array[i]);
+		}
+		return this;
+	}
 	resetConductors(rootPoint) {
 		resetConductors(rootPoint);
 		return this;

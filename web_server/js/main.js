@@ -29,10 +29,12 @@ window.addEventListener('load', () => {
 	Shared.setCanvas(canvas);
 	bindCanvas(canvas);
 	updateCanvasSize();
-	setInterval(() => {
+	const update = () => {
 		circuit.tic();
 		Render.drawCircuit();
-	}, 100);
+		requestAnimationFrame(update);
+	};
+	requestAnimationFrame(update);
 	bindWindow();
 	window.addEventListener('resize', updateCanvasSize);
 });

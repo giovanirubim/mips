@@ -108,7 +108,7 @@ export const encodeCircuit = (circuit, className) => {
 	add(`export class ${ className } extends ComposedComponent {`);
 	add(`constructor() {`);
 	add(`super();`);
-	add('const circuit = new Circuit(this);');
+	add('const circuit = new Circuit();');
 	add('const inputLayer = [];');
 	add('const nonInput = [];');
 	add('this.circuit = circuit;');

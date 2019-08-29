@@ -57,6 +57,7 @@ export class Wire {
 		this.id = Symbol();
 		this.a = a;
 		this.b = b;
+		this.hidden = false;
 		pushUnique(a.wires, this);
 		pushUnique(b.wires, this);
 	}
