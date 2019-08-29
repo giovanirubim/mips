@@ -17,7 +17,7 @@ const getReachedComponents = (root, visited) => {
 		getReachedComponents(wire.other(root), visited);
 	});
 };
-const organizeIOPoints = (points, add) => {
+const organizeIOPoints = points => {
 	let x0, y0, x1, y1;
 	x0 = Infinity;
 	y0 = Infinity;
@@ -136,8 +136,7 @@ export const encodeCircuit = (circuit, className) => {
 		const id = giveId(item);
 		add(`const ${ id } = new ${ item.constructor.name }(${ item.args });`);
 		add(`circuit.add(${ id });`);
-		item.pos(coord);
-		add(`${ id }.translate(${ coord.join(', ') });`);
+		add(`${ id }.transform.set(${ item.transform.join(', ') });`);
 		if (visited[item.id]) {
 			add(`inputLayer.push(${ id });`);
 		} else {
@@ -151,15 +150,109 @@ export const encodeCircuit = (circuit, className) => {
 		const id_b = getNewId(b);
 		add(`circuit.createWire(${ id_a }, ${ id_b });`);
 	}
-	const { queues, sx, sy } = organizeIOPoints(iopoints, add);
-	let x0 = -sx*0.5;
-	let y0 = -sy*0.5;
-	let x1 = x0 + sx;
-	let y1 = y0 + sy;
-	queues[0].forEach(point => {
-
+	const { queues, sx, sy } = organizeIOPoints(iopoints);
+	const x0 = -sx*0.5;
+	const y0 = -sy*0.5;
+	const x1 = x0 + sx;
+	const y1 = y0 + sy;
+	const size = [sx, sy];
+	const iToFixed = [y0, x1, y1, x0];
+	const start = [x0, y0];
+	const iToAxis = ['x', 'y'];
+	queues.forEach((queue, i) => {
+		if (!queue.length) return;
+		let fixed = iToFixed[i];
+		let xi = i&1;
+		let yi = xi^1;
+		let xl = iToAxis[xi];
+		let yl = iToAxis[yi];
+		let len = (queue.length - 1)*GRID;
+		let x = start[xi] + Math.floor((size[xi] - len)*0.5/GRID)*GRID;
+		queue.forEach(point => {
+			const {type} = point;
+			const id = createId();
+			const other = getNewId(point);
+			coord[xi] = x;
+			coord[yi] = fixed;
+			add(`const ${ id } = this.addIO(${ coord.join(', ') }, '${ type }');`);
+			add(`circuit.createHiddenWire(${ id }, ${ other })`);
+			x += GRID;
+		});
 	});
+	const padding = GRID*0.3;
+	add(`this.hitbox = [${
+		x0 + padding
+	}, ${
+		y0 + padding
+	}, ${
+		x1 - padding
+	}, ${
+		y1 - padding
+	}];`);
 	add('}');
 	add('}');
 	return code;
 };
+
+setTimeout(() => {
+	const _1 = circuit.createIOPoint('output', 0, 160);
+	const _2 = circuit.createIOPoint('output', -220, 0);
+	const _3 = circuit.createIOPoint('input', 100, -120);
+	const _4 = circuit.createIOPoint('input', -100, -120);
+	const _5 = circuit.createIOPoint('input', 200, 0);
+	const _6 = circuit.createPoint(100, 0);
+	const _7 = circuit.createPoint(100, -60);
+	const _8 = circuit.createPoint(20, 40);
+	const _9 = circuit.createPoint(-20, 0);
+	const _a = circuit.createPoint(-40, -40);
+	const _b = circuit.createPoint(-60, -20);
+	const _c = circuit.createPoint(-20, -60);
+	const _d = circuit.createPoint(-40, -80);
+	const _e = circuit.createPoint(-80, -80);
+	const _f = circuit.createPoint(-100, -100);
+	const _10 = circuit.createPoint(120, -20);
+	const _11 = circuit.createPoint(140, 0);
+	const _12 = circuit.createPoint(140, 20);
+	const _13 = circuit.createPoint(120, 40);
+	const _14 = new XorGate();
+	circuit.add(_14);
+	_14.transform.set(-1, 0, 0, -1, 60, 20);
+	const _15 = new AndGate();
+	circuit.add(_15);
+	_15.transform.set(-1, 0, 0, -1, 60, -40);
+	const _16 = new XorGate();
+	circuit.add(_16);
+	_16.transform.set(0, 1, -1, 0, 0, 80);
+	const _17 = new AndGate();
+	circuit.add(_17);
+	_17.transform.set(-1, 0, 0, -1, -60, 20);
+	const _18 = new OrGate();
+	circuit.add(_18);
+	_18.transform.set(-1, 0, 0, -1, -140, 0);
+	circuit.createWire(_14.outerPoints[1], _6);
+	circuit.createWire(_6, _7);
+	circuit.createWire(_7, _15.outerPoints[1]);
+	circuit.createWire(_14.outerPoints[2], _8);
+	circuit.createWire(_8, _16.outerPoints[0]);
+	circuit.createWire(_1, _16.outerPoints[2]);
+	circuit.createWire(_8, _17.outerPoints[0]);
+	circuit.createWire(_18.outerPoints[0], _17.outerPoints[2]);
+	circuit.createWire(_2, _18.outerPoints[2]);
+	circuit.createWire(_9, _16.outerPoints[1]);
+	circuit.createWire(_9, _17.outerPoints[1]);
+	circuit.createWire(_3, _7);
+	circuit.createWire(_15.outerPoints[2], _a);
+	circuit.createWire(_a, _b);
+	circuit.createWire(_b, _18.outerPoints[1]);
+	circuit.createWire(_9, _c);
+	circuit.createWire(_c, _d);
+	circuit.createWire(_d, _e);
+	circuit.createWire(_e, _f);
+	circuit.createWire(_f, _4);
+	circuit.createWire(_10, _15.outerPoints[0]);
+	circuit.createWire(_10, _11);
+	circuit.createWire(_11, _5);
+	circuit.createWire(_11, _12);
+	circuit.createWire(_12, _13);
+	circuit.createWire(_14.outerPoints[0], _13);
+}, 100);

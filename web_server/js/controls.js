@@ -1,20 +1,19 @@
 import { Coord, Transform } from '/js/transform-2d.js';
 import { arrayRemove, calcDistance } from '/js/utils.js';
-import {
-	MIN_DRAG_DIST,
-	GRID,
-	ANIMATION_ROTATION_DURATION
-} from '/js/config.js';
 import { Point, Wire } from '/js/conduction.js';
-import {
-	Component,
-	IOPoint
-} from '/js/circuit.js';
+import { IOPoint } from '/js/circuit.js';
+import { Component } from '/js/component.js';
 import * as AtomicComponent from '/js/atomic-components.js';
 import * as CustomComponent from '/js/custom-components.js';
 import * as Shared from '/js/shared.js';
 import * as Render from '/js/render.js';
 import * as Encoder from '/js/encoder.js';
+
+import {
+	MIN_DRAG_DIST,
+	GRID,
+	ANIMATION_ROTATION_DURATION
+} from '/js/config.js';
 
 const ES_NONE = 0x1;
 const ES_CLICKED = 0x2;
@@ -29,6 +28,8 @@ const history = [];
 const keyHandlerMap = {};
 
 let eventState = ES_NONE;
+let animation = null;
+
 const setEvent = code => {
 	// switch (code) {
 	// 	case 0x1: console.log('NONE'); break;
@@ -368,7 +369,6 @@ export const handleMouseup = mouseInfo => {
 	}
 	eventEnded();
 };
-let animation = null;
 const animateRotation = mouseInfo => {
 	let zoom = mouseInfo.zoom.clone();
 	const ini = new Date();
@@ -571,6 +571,3 @@ addKeyHandler('l', 0, 0, () => {
 		selection[i].label = label;
 	}
 });
-for (let name in AtomicComponent) {
-	window[name] = AtomicComponent[name];
-}

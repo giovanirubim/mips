@@ -7,8 +7,8 @@ import {
 	IOPoint,
 	InnerIOPoint,
 	OuterIOPoint,
-	Component
 } from '/js/circuit.js';
+import { Component } from '/js/component.js'
 import * as Drawings from '/js/drawings.js';
 
 export class NotGate extends Component {
