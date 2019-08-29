@@ -98,8 +98,7 @@ const resetConductors = rootPoint => {
 };
 
 export class Circuit {
-	constructor(component) {
-		this.component = component;
+	constructor() {
 		this.wires = [];
 		this.points = [];
 		this.iopoints = [];
@@ -325,8 +324,8 @@ export class Circuit {
 		return this.points.indexOf(point) !== -1;
 	}
 	removeWire(wire) {
+		wire.disconnect();
 		if (arrayRemove(this.wires, wire) === true) {
-			wire.disconnect();
 			const {a, b} = wire;
 			resetConductors(a);
 			resetConductors(b);

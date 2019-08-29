@@ -68,6 +68,11 @@ export class Component {
 		b.set(x + sx, y + sy);
 		return this;
 	}
+	clone() {
+		const item = new this.constructor();
+		item.transform.set(this.transform);
+		return item;
+	}
 	readInputs() { return 0; }
 	tic() { return 0; }
 }
