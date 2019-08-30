@@ -1,7 +1,7 @@
 import { Coord, Transform } from '/js/transform-2d.js';
 import { arrayRemove, pushUnique, calcDistance } from '/js/utils.js';
 import { Point, Wire } from '/js/conduction.js';
-import { IOPoint } from '/js/circuit.js';
+import { IOPoint, OuterIOPoint } from '/js/circuit.js';
 import { Component } from '/js/component.js';
 import { copyToClipboard } from '/js/clipboard.js';
 import * as AtomicComponent from '/js/atomic-components.js';
@@ -709,11 +709,61 @@ addKeyHandler('escape', 0, 0, () => {
 	clearSelection();
 });
 addKeyHandler('l', 0, 0, () => {
-	if (selection.length === 0) return;
-	const label = (prompt('Label') || '').trim();
-	if (!label) return;
+	const array = [];
+	const coord = Coord();
+	const {length} = selection;
+	let first_x = Infinity;
+	let first_y = 0;
+	for (let i=0; i<length; ++i) {
+		const item = selection[i];
+		if (item instanceof Wire) {
+			continue;
+		}
+		array.push(item);
+		const [x, y] = item.pos(coord);
+		if (x < first_x) {
+			first_x = x;
+			first_y = y;
+		}
+	}
+});
+addKeyHandler('l', 1, 0, () => {
+	const visited = {};
+	const explore = item => {
+		const {id} = item;
+		if (visited[id] === true) {
+			return;
+		}
+		visited[id] = true;
+		if (item instanceof Wire) {
+			const {a, b} = item;
+			explore(a);
+			explore(b);
+			return;
+		}
+		if (!(item instanceof OuterIOPoint)) {
+			addToSelection(item);
+		}
+		if (item instanceof Point) {
+			const {wires} = item;
+			for (let i=wires.length; i--;) {
+				const wire = wires[i];
+				explore(wire.other(item));
+			}
+			if (item.component) {
+				explore(item.component);
+			}
+		}
+		if (item instanceof Component) {
+			const points = item.outerPoints;
+			for (let i=points.length; i--;) {
+				const point = points[i];
+				explore(point);
+			}
+		}
+	};
 	for (let i=selection.length; i--;) {
-		selection[i].label = label;
+		explore(selection[i]);
 	}
 });
 addKeyHandler('pageup', 0, 0, () => {

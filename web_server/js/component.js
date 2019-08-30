@@ -14,6 +14,7 @@ export class Component {
 		this.stateChanged = 0;
 		this.hitbox = [-20, -20, 20, 20];
 		this.args = '';
+		this.selected = false;
 
 		// Auxiliares
 		this.pos_a = Coord();
@@ -34,6 +35,12 @@ export class Component {
 		coord[0] = transform[4];
 		coord[1] = transform[5];
 		return coord;
+	}
+	moveTo(x, y) {
+		const {transform} = this;
+		transform[4] = x;
+		transform[5] = y;
+		return this;
 	}
 	translate(x, y) {
 		this.transform.translate(x, y);

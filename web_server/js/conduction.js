@@ -20,6 +20,7 @@ export class Point {
 		this.conductor = null;
 		this.isSource = 0;
 		this.wires = [];
+		this.selected = false;
 	}
 	translate(x, y) {
 		this.coord.translate(x, y);
