@@ -1,6 +1,8 @@
 import { GRID } from '/js/config.js';
 import { Coord } from '/js/transform-2d.js';
-import { OuterIOPoint } from '/js/circuit.js';
+import { Circuit, OuterIOPoint } from '/js/circuit.js';
+import * as AtomicComponent from '/js/atomic-components.js';
+import * as CustomComponent from '/js/custom-components.js';
 const getReachedComponents = (root, visited) => {
 	const {id} = root;
 	if (visited[id]) return;
@@ -70,6 +72,7 @@ const organizeIOPoints = points => {
 	return { queues, sx, sy };
 };
 export const encodeCircuit = (circuit, className) => {
+	const toClass = className !== undefined;
 	let code = '';
 	let tabs = '';
 	const coord = Coord();
@@ -105,15 +108,17 @@ export const encodeCircuit = (circuit, className) => {
 			return newIdMap[item.id];
 		}
 	};
-	add(`export class ${ className } extends ComposedComponent {`);
-	add(`constructor() {`);
-	add(`super();`);
-	add('const circuit = new Circuit();');
-	add('const inputLayer = [];');
-	add('const nonInput = [];');
-	add('this.circuit = circuit;');
-	add('this.inputLayer = inputLayer;');
-	add('this.nonInput = nonInput;');
+	if (toClass) {
+		add(`export class ${ className } extends ComposedComponent {`);
+		add(`constructor() {`);
+		add(`super();`);
+		add('const circuit = new Circuit();');
+		add('const inputLayer = [];');
+		add('const nonInput = [];');
+		add('this.circuit = circuit;');
+		add('this.inputLayer = inputLayer;');
+		add('this.nonInput = nonInput;');
+	}
 	const visited = {};
 	for (let i=iopoints.length; i--;) {
 		const point = iopoints[i];
@@ -121,7 +126,7 @@ export const encodeCircuit = (circuit, className) => {
 		const {type} = point;
 		point.pos(coord);
 		add(`const ${ id } = circuit.createIOPoint('${ type }', ${ coord.join(', ') });`);
-		if (type === 'input') {
+		if (toClass && type === 'input') {
 			getReachedComponents(point, visited);
 		}
 	}
@@ -137,10 +142,12 @@ export const encodeCircuit = (circuit, className) => {
 		add(`const ${ id } = new ${ item.constructor.name }(${ item.args });`);
 		add(`circuit.add(${ id });`);
 		add(`${ id }.transform.set(${ item.transform.join(', ') });`);
-		if (visited[item.id]) {
-			add(`inputLayer.push(${ id });`);
-		} else {
-			add(`nonInput.push(${ id });`);
+		if (toClass) {
+			if (visited[item.id]) {
+				add(`inputLayer.push(${ id });`);
+			} else {
+				add(`nonInput.push(${ id });`);
+			}
 		}
 	}
 	for (let i=wires.length; i--;) {
@@ -150,46 +157,59 @@ export const encodeCircuit = (circuit, className) => {
 		const id_b = getNewId(b);
 		add(`circuit.createWire(${ id_a }, ${ id_b });`);
 	}
-	const { queues, sx, sy } = organizeIOPoints(iopoints);
-	const x0 = -sx*0.5;
-	const y0 = -sy*0.5;
-	const x1 = x0 + sx;
-	const y1 = y0 + sy;
-	const size = [sx, sy];
-	const iToFixed = [y0, x1, y1, x0];
-	const start = [x0, y0];
-	const iToAxis = ['x', 'y'];
-	queues.forEach((queue, i) => {
-		if (!queue.length) return;
-		let fixed = iToFixed[i];
-		let xi = i&1;
-		let yi = xi^1;
-		let xl = iToAxis[xi];
-		let yl = iToAxis[yi];
-		let len = (queue.length - 1)*GRID;
-		let x = start[xi] + Math.floor((size[xi] - len)*0.5/GRID)*GRID;
-		queue.forEach(point => {
-			const {type} = point;
-			const id = createId();
-			const other = getNewId(point);
-			coord[xi] = x;
-			coord[yi] = fixed;
-			add(`const ${ id } = this.addIO(${ coord.join(', ') }, '${ type }');`);
-			add(`circuit.createHiddenWire(${ id }, ${ other })`);
-			x += GRID;
+	if (toClass) {
+		const { queues, sx, sy } = organizeIOPoints(iopoints);
+		const x0 = -sx*0.5;
+		const y0 = -sy*0.5;
+		const x1 = x0 + sx;
+		const y1 = y0 + sy;
+		const size = [sx, sy];
+		const iToFixed = [y0, x1, y1, x0];
+		const start = [x0, y0];
+		const iToAxis = ['x', 'y'];
+		queues.forEach((queue, i) => {
+			if (!queue.length) return;
+			let fixed = iToFixed[i];
+			let xi = i&1;
+			let yi = xi^1;
+			let xl = iToAxis[xi];
+			let yl = iToAxis[yi];
+			let len = (queue.length - 1)*GRID;
+			let x = start[xi] + Math.floor((size[xi] - len)*0.5/GRID)*GRID;
+			queue.forEach(point => {
+				const {type} = point;
+				const id = createId();
+				const other = getNewId(point);
+				coord[xi] = x;
+				coord[yi] = fixed;
+				add(`const ${ id } = this.addIO(${ coord.join(', ') }, '${ type }');`);
+				add(`circuit.createHiddenWire(${ id }, ${ other })`);
+				x += GRID;
+			});
 		});
-	});
-	const padding = GRID*0.3;
-	add(`this.hitbox = [${
-		x0 + padding
-	}, ${
-		y0 + padding
-	}, ${
-		x1 - padding
-	}, ${
-		y1 - padding
-	}];`);
-	add('}');
-	add('}');
-	return code;
+		const padding = GRID*0.3;
+		add(`this.hitbox = [${
+			x0 + padding
+		}, ${
+			y0 + padding
+		}, ${
+			x1 - padding
+		}, ${
+			y1 - padding
+		}];`);
+		add('}');
+		add('}');
+	}
+	return code.trim();
+};
+export const decodeCircuit = str => {
+	const classes = [];
+	const names = [];
+	for (let name in AtomicComponent) {
+		names.push(name);
+		classes.push(AtomicComponent[name]);
+	}
+	let call;
+	eval(`call = (circuit, ${ names.join(', ') }) => {${ str }\nreturn circuit;};`);
+	return call(new Circuit(), ...classes);
 };

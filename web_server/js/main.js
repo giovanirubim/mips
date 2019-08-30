@@ -1,4 +1,5 @@
 import { bindCanvas, bindWindow } from '/js/eventHandler.js';
+import { decodeCircuit } from '/js/encoder.js';
 import { Circuit } from '/js/circuit.js';
 import * as Shared from '/js/shared.js';
 import * as Render from '/js/render.js';
@@ -24,7 +25,10 @@ const updateCanvasSize = () => {
 };
 window.addEventListener('load', () => {
 	canvas = document.querySelector('canvas');
-	const circuit = new Circuit();
+	const code = localStorage.getItem('code');
+	const circuit = code
+		? decodeCircuit(code)
+		: new Circuit();
 	Shared.setCircuit(circuit);
 	Shared.setCanvas(canvas);
 	bindCanvas(canvas);

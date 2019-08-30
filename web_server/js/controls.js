@@ -3,6 +3,7 @@ import { arrayRemove, pushUnique, calcDistance } from '/js/utils.js';
 import { Point, Wire } from '/js/conduction.js';
 import { IOPoint } from '/js/circuit.js';
 import { Component } from '/js/component.js';
+import { copyToClipboard } from '/js/clipboard.js';
 import * as AtomicComponent from '/js/atomic-components.js';
 import * as CustomComponent from '/js/custom-components.js';
 import * as Shared from '/js/shared.js';
@@ -22,6 +23,7 @@ const ES_SELECTING_SQUARE = 0x4;
 const ES_WIRING = 0x5;
 const ES_TRANSLATING_OBJECT = 0x6;
 const ES_ROTATING_VIEW = 0x7;
+const ES_ROTATING_CIRCUIT = 0x8;
 const selection = [];
 const prev = Coord();
 const keyHandlerMap = {};
@@ -43,6 +45,7 @@ const setEvent = code => {
 };
 const eventEnded = () => {
 	setEvent(ES_NONE);
+	saveToStorage();
 };
 const keyEventToStr = (key, ctrl, shift) => {
 	return `${key}-${ ctrl|0 }-${ shift|0 }`;
@@ -315,6 +318,11 @@ const trim = () => {
 		remove(array[i]);
 	}
 };
+const saveToStorage = () => {
+	const circuit = Shared.getCircuit();
+	const code = Encoder.encodeCircuit(circuit);
+	localStorage.setItem('code', code);
+};
 export const handleMousedown = mouseInfo => {
 	if (eventState !== ES_NONE) return;
 	setEvent(ES_CLICKED);
@@ -353,17 +361,28 @@ export const handleMousemove = mouseInfo => {
 				setEvent(ES_TRANSLATING_VIEW);
 			} else if (button === 2) {
 				const circuit = Shared.getCircuit();
-				let [ax, ay] = mouseInfo.pos0;
+				let [x, y] = mouseInfo.pos0;
 				let [bx, by] = mouseInfo.pos1;
-				ax = Math.round(ax/GRID)*GRID;
-				ay = Math.round(ay/GRID)*GRID;
+				const ax = Math.round(x/GRID)*GRID;
+				const ay = Math.round(y/GRID)*GRID;
 				bx = Math.round(bx/GRID)*GRID;
 				by = Math.round(by/GRID)*GRID;
-				const a = circuit.getAt(ax, ay, {
+				let a = circuit.getAt(ax, ay, {
 					point: true,
 					innerio: true,
 					outerio: true,
-				}) || circuit.createPoint(ax, ay);
+				});
+				if (a === null) {
+					const wire = circuit.getAt(x, y, {wire: true});
+					a = circuit.createPoint(ax, ay);
+					if (wire !== null) {
+						const s = wire.a;
+						const e = wire.b;
+						circuit.removeWire(wire);
+						circuit.createWire(s, a);
+						circuit.createWire(a, e);
+					}
+				}
 				const b = circuit.createPoint(ax, ay);
 				mouseInfo.point_a = a;
 				mouseInfo.point_b = b;
@@ -470,7 +489,7 @@ export const handleMouseup = mouseInfo => {
 	}
 	eventEnded();
 };
-const animateRotation = mouseInfo => {
+const animateViewRotation = mouseInfo => {
 	let zoom = mouseInfo.zoom.clone();
 	const ini = new Date();
 	const ang = mouseInfo.scroll < 0 ? Math.PI*0.5 : - Math.PI*0.5;
@@ -495,7 +514,7 @@ export const handleScroll = mouseInfo => {
 	if (eventState !== ES_NONE) return;
 	if (mouseInfo.ctrl === true && mouseInfo.shift === true) {
 		setEvent(ES_ROTATING_VIEW)
-		animateRotation(mouseInfo);
+		animateViewRotation(mouseInfo);
 	} else {
 		const {x, y, sx, sy} = Shared.getViewport();
 		const [mx, my] = mouseInfo.scrPos1;
@@ -547,12 +566,12 @@ addKeyHandler('d', 1, 0, () => {
 });
 addKeyHandler('s', 1, 0, () => {
 	const circuit = Shared.getCircuit();
-	let code = Encoder.encodeCircuit(circuit, 'Untitled');
-	console.log(code);
+	const className = prompt('Class name');
+	if (!className) return;
+	const code = Encoder.encodeCircuit(circuit, className);
+	copyToClipboard(code);
 });
-addKeyHandler('t', 0, 0, () => {
-	trim();
-});
+addKeyHandler('t', 0, 0, trim);
 addKeyHandler('home', 0, 0, () => {
 	const {x, y, sx, sy} = Shared.getViewport();
 	const coord = Shared.getCursor().clone();
@@ -575,18 +594,55 @@ addKeyHandler('o', 0, 0, () => {
 	Shared.getCircuit().createIOPoint('output', x, y);
 	Render.drawCircuit();
 });
-addKeyHandler('r', 1, 0, () => {
-	if (selection.length === 1) {
-		const item = selection[0];
-		if (item instanceof Component) {
-			const coord = Coord();
-			const [x, y] = item.pos(coord);
-			item.translate(-x, -y);
-			item.rotate(Math.PI/2);
-			item.translate(x, y);
-			item.transform.round();
+const animateCircuitRotation = (cx, cy, array) => {
+	const rotation = Transform();
+	const ini = new Date();
+	animation = setInterval(() => {
+		let t = (new Date() - ini)/ANIMATION_ROTATION_DURATION;
+		if (t >= 1) {
+			t = 1;
+		} else {
+			t = (1 - Math.cos(t*Math.PI))*0.5;
 		}
+		rotation.set(1, 0, 0, 1, 0, 0);
+		rotation.translate(-cx, -cy)
+		rotation.rotate(Math.PI*0.5*t)
+		rotation.translate(cx, cy);
+		for (let i=array.length; i--;) {
+			const {item, current, clone} = array[i];
+			current.set(clone).apply(rotation);
+		}
+		Render.drawCircuit();
+		if (t === 1) {
+			clearInterval(animation);
+			animation = null;
+			eventEnded();
+		}
+	}, 0);
+};
+addKeyHandler('r', 1, 0, () => {
+	if (eventState !== ES_NONE) return;
+	const coord = Coord();
+	const array = [];
+	let [ax, ay, bx, by] = [Infinity, Infinity, -Infinity, -Infinity];
+	for (let i=selection.length; i--;) {
+		const item = selection[i];
+		if (item instanceof Wire) {
+			continue;
+		}
+		const current = item.transform || item.coord;
+		const clone = current.clone();
+		array.push({item, current, clone});
+		const [x, y] = item.pos(coord);
+		ax = Math.min(ax, x);
+		ay = Math.min(ay, y);
+		bx = Math.max(bx, x);
+		by = Math.max(by, y);
 	}
+	const cx = Math.round((ax + bx)*0.5/GRID)*GRID;
+	const cy = Math.round((ay + by)*0.5/GRID)*GRID;
+	animateCircuitRotation(cx, cy, array);
+	setEvent(ES_ROTATING_CIRCUIT);
 });
 addKeyHandler('a', 1, 0, () => {
 	const circuit = Shared.getCircuit();
@@ -670,4 +726,63 @@ addKeyHandler('pageup', 0, 0, () => {
 });
 addKeyHandler('f1', 0, 0, () => {
 	console.log(selection[0]);
+});
+addKeyHandler('e', 0, 0, () => {
+	const circuit = Shared.getCircuit();
+	const array = selection.slice();
+	clearSelection();
+	for (let i=array.length; i--;) {
+		const item = array[i];
+		if (item instanceof Point) {
+			const [x, y] = item.coord;
+			const point = circuit.createPoint(x, y);
+			circuit.createWire(item, point);
+			addToSelection(point);
+		}
+	}
+});
+addKeyHandler('d', 0, 0, removeDoubles);
+addKeyHandler('backspace', 0, 0, () => {
+	const circuit = Shared.getCircuit();
+	const array = [];
+	for (let i=selection.length; i--;) {
+		const point = selection[i];
+		if (point instanceof Point && point.wires.length === 2) {
+			array.push(point);
+		}
+	}
+	for (let i=array.length; i--;) {
+		const point = array[i];
+		const [wa, wb] = point.wires;
+		const a = wa.other(point);
+		const b = wb.other(point);
+		remove(point);
+		circuit.createWire(a, b);
+	}
+});
+addKeyHandler('r', 0, 0, () => {
+	if (selection.length < 2) return;
+	const circuit = Shared.getCircuit();
+	const coord = Coord();
+	const a = selection[selection.length - 2];
+	const b = selection[selection.length - 1];
+	if ((a instanceof Wire) || (b instanceof Wire)) {
+		return;
+	}
+	const [ax, ay] = a.pos(coord);
+	const [bx, by] = b.pos(coord);
+	const dx = bx - ax;
+	const dy = by - ay;
+	let x = bx + dx;
+	let y = by + dy;
+	if (dx === 0 && dy === 0) return;
+	for (;; x += dx, y += dy) {
+		const item = circuit.getAt(x, y, {
+			point: true,
+			innerio: true,
+			component: true
+		});
+		if (item === null) break;
+		addToSelection(item);
+	}
 });
