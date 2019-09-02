@@ -1,9 +1,6 @@
 import { Transform, Coord } from '/js/transform-2d.js';
-import {
-	InnerIOPoint,
-	OuterIOPoint,
-	Circuit
-} from '/js/circuit.js';
+import { Conductor } from '/js/conduction.js';
+import { InnerIOPoint, OuterIOPoint, Circuit } from '/js/circuit.js';
 
 export class Component {
 	constructor() {
@@ -14,6 +11,7 @@ export class Component {
 		this.stateChanged = 0;
 		this.hitbox = [-20, -20, 20, 20];
 		this.args = '';
+		this.label = '';
 		this.selected = false;
 
 		// Auxiliares

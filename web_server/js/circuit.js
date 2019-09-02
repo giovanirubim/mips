@@ -153,20 +153,6 @@ export class Circuit {
 		wire.hidden = true;
 		return wire;
 	}
-	disconnectPoint(point) {
-		const {wires} = point;
-		const array = [];
-		for (let i=wires.length; i--;) {
-			const wire = wires[i];
-			if (wire.hidden === false) {
-				array.push(wire);
-			}
-		}
-		for (let i=array.length; i--;) {
-			this.removeWire(array[i]);
-		}
-		return this;
-	}
 	resetConductors(rootPoint) {
 		resetConductors(rootPoint);
 		return this;
@@ -337,8 +323,8 @@ export class Circuit {
 		return this.points.indexOf(point) !== -1;
 	}
 	removeWire(wire) {
-		wire.disconnect();
 		if (arrayRemove(this.wires, wire) === true) {
+			wire.disconnect();
 			const {a, b} = wire;
 			resetConductors(a);
 			resetConductors(b);
@@ -364,11 +350,7 @@ export class Circuit {
 	}
 	removeInnerIOPoint(point) {
 		if (arrayRemove(this.iopoints, point) === true) {
-			const neighbors = point.getNeighbors();
-			const {wires} = point;
-			while (wires.length !== 0) {
-				this.removeWire(wires[0]);
-			}
+			this.disconnectPoint(point);
 		}
 		return this;
 	}
@@ -386,10 +368,7 @@ export class Circuit {
 		if (arrayRemove(this.components, item) === true) {
 			const {outerPoints} = item;
 			for (let i=outerPoints.length; i--;) {
-				const {wires} = outerPoints[i];
-				while (wires.length) {
-					this.removeWire(wires[0]);
-				}
+				this.disconnectPoint(outerPoints[i]);
 			}
 		}
 		return this;

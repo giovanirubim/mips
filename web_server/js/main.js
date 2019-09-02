@@ -7,13 +7,6 @@ import * as Render from '/js/render.js';
 import * as AtomicComponents from '/js/atomic-components.js';
 import * as CustomComponents from '/js/custom-components.js';
 
-for (let name in AtomicComponents) {
-	window[name] = AtomicComponents[name];
-}
-for (let name in CustomComponents) {
-	window[name] = CustomComponents[name];
-}
-
 let canvas;
 const updateCanvasSize = () => {
 	const sx = window.innerWidth;

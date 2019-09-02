@@ -18,3 +18,4 @@ export const COMPONENT_COLOR = '#333';
 export const CURSOR_COLOR = 'rgba(255, 255, 255, 0.25)';
 export const ANIMATION_ROTATION_DURATION = 150;
 export const COMPONENT_LINE_WIDTH = 2;
+export const LABEL_FONT_SIZE = 8;

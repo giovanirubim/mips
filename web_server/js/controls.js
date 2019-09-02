@@ -4,6 +4,7 @@ import { Point, Wire } from '/js/conduction.js';
 import { IOPoint, OuterIOPoint } from '/js/circuit.js';
 import { Component } from '/js/component.js';
 import { copyToClipboard } from '/js/clipboard.js';
+import * as WordHandler from '/js/word-handlers.js';
 import * as AtomicComponent from '/js/atomic-components.js';
 import * as CustomComponent from '/js/custom-components.js';
 import * as Shared from '/js/shared.js';
@@ -56,18 +57,34 @@ const addKeyHandler = (key, ctrl, shift, handler) => {
 };
 const pickComponentByName = name => {
 	name = name.trim().toLowerCase();
+	let result = null;
+	let resultName = null;
 	const len = name.length;
 	for (let type in AtomicComponent) {
 		if (type.toLowerCase().substr(0, len) === name) {
-			return AtomicComponent[type];
+			if (result === null || type.length < resultName.length) {
+				result = AtomicComponent[type];
+				resultName = type;
+			}
 		}
 	}
 	for (let type in CustomComponent) {
 		if (type.toLowerCase().substr(0, len) === name) {
-			return CustomComponent[type];
+			if (result === null || type.length < resultName.length) {
+				result = CustomComponent[type];
+				resultName = type;
+			}
 		}
 	}
-	return null;
+	for (let type in WordHandler) {
+		if (type.toLowerCase().substr(0, len) === name) {
+			if (result === null || type.length < resultName.length) {
+				result = WordHandler[type];
+				resultName = type;
+			}
+		}
+	}
+	return result;
 };
 const triggerKey = (key, ctrl, shift, info) => {
 	const str = keyEventToStr(key, ctrl, shift);
@@ -378,7 +395,7 @@ export const handleMousemove = mouseInfo => {
 					if (wire !== null) {
 						const s = wire.a;
 						const e = wire.b;
-						circuit.removeWire(wire);
+						remove(wire);
 						circuit.createWire(s, a);
 						circuit.createWire(a, e);
 					}
@@ -566,9 +583,13 @@ addKeyHandler('d', 1, 0, () => {
 });
 addKeyHandler('s', 1, 0, () => {
 	const circuit = Shared.getCircuit();
-	const className = prompt('Class name');
+	let str = prompt('Class name [,label]');
+	if (!str) return;
+	let [className, label] = str.split(',');
+	className = className.trim();
 	if (!className) return;
-	const code = Encoder.encodeCircuit(circuit, className);
+	if (label) label = label.trim();
+	const code = Encoder.encodeCircuit(circuit, className, label);
 	copyToClipboard(code);
 });
 addKeyHandler('t', 0, 0, trim);
@@ -582,7 +603,7 @@ addKeyHandler('home', 0, 0, () => {
 });
 addKeyHandler('0', 1, 0, () => {
 	const scale = Render.getScale();
-	Render.scaleView(1/scale);
+	Render.scaleView(2.2/scale);
 });
 addKeyHandler('i', 0, 0, () => {
 	const [x, y] = Shared.getCursor();
@@ -617,6 +638,9 @@ const animateCircuitRotation = (cx, cy, array) => {
 			clearInterval(animation);
 			animation = null;
 			eventEnded();
+			for (let i=array.length; i--;) {
+				array[i].current.round();
+			}
 		}
 	}, 0);
 };
@@ -666,7 +690,7 @@ addKeyHandler('a', 0, 0, () => {
 	str = str.split(' ');
 	const Type = pickComponentByName(str[0]);
 	if (Type === null) return;
-	const component = new Type();
+	const component = new Type(...str.slice(1));
 	const [x, y] = Shared.getCursor();
 	component.translate(x, y);
 	circuit.add(component);
@@ -712,19 +736,55 @@ addKeyHandler('l', 0, 0, () => {
 	const array = [];
 	const coord = Coord();
 	const {length} = selection;
-	let first_x = Infinity;
-	let first_y = 0;
+	let x = Infinity;
+	let y = 0;
 	for (let i=0; i<length; ++i) {
 		const item = selection[i];
 		if (item instanceof Wire) {
 			continue;
 		}
 		array.push(item);
-		const [x, y] = item.pos(coord);
-		if (x < first_x) {
-			first_x = x;
-			first_y = y;
+		const [px, py] = item.pos(coord);
+		if (px < x) {
+			x = px;
+			y = py;
 		}
+	}
+	if (array.length < 2) return;
+	array.sort((a, b) => {
+		a = a.pos(coord)[0];
+		b = b.pos(coord)[0];
+		return a - b;
+	});
+	const pos_a = Coord();
+	const pos_b = Coord();
+
+	const calcWidth = item => {
+		if (item.getHitbox !== undefined) {
+			item.getHitbox(pos_a, pos_b);
+		} else {
+			item.pos(pos_a);
+			item.pos(pos_b);
+		}
+		return Math.ceil((pos_b[0] - pos_a[0])/GRID)*GRID;
+	};
+	const calcLeft = sx => Math.floor(sx*0.5/GRID)*GRID;
+
+	const first = array[0];
+	const sx = calcWidth(first);
+	const sl = calcLeft(sx);
+	const sr = sx - sl;
+	first.moveTo(x, y);
+	x += sr + GRID;
+	
+	for (let i=1; i<array.length; ++i) {
+		const item = array[i];
+		const sx = calcWidth(item);
+		const sl = calcLeft(sx);
+		const sr = sx - sl;
+		x += sl;
+		item.moveTo(x, y);
+		x += sr + GRID;
 	}
 });
 addKeyHandler('l', 1, 0, () => {
@@ -835,4 +895,40 @@ addKeyHandler('r', 0, 0, () => {
 		if (item === null) break;
 		addToSelection(item);
 	}
+});
+const incInnerSpace = (axis, inc) => {
+	const map = {x: 0, y: 1};
+	const iAxis = map[axis];
+	const jAxis = iAxis^1;
+	const array = [];
+	const coord = Coord();
+	for (let i=selection.length; i--;) {
+		const item = selection[i];
+		if (item instanceof Wire) {
+			continue;
+		}
+		item.pos(coord).round();
+		const p1 = coord[iAxis];
+		const p2 = coord[jAxis];
+		array.push({ item, p1, p2 });
+	}
+	array.sort((a, b) => (a.p1 - b.p1) || (a.p2 - b.p2));
+	coord.set(0, 0);
+	for (let i=1; i<array.length; ++i) {
+		coord[iAxis] = i*inc*GRID;
+		const [dx, dy] = coord;
+		array[i].item.translate(dx, dy);
+	}
+};
+addKeyHandler('+', 1, 0, () => {
+	incInnerSpace('x', 1);
+});
+addKeyHandler('-', 1, 0, () => {
+	incInnerSpace('x', -1);
+});
+addKeyHandler('+', 0, 1, () => {
+	incInnerSpace('y', 1);
+});
+addKeyHandler('-', 0, 1, () => {
+	incInnerSpace('y', -1);
 });

@@ -2,7 +2,8 @@ import {
 	SELECTED_FILL_COLOR,
 	SELECTED_STROKE_COLOR,
 	COMPONENT_LINE_COLOR,
-	COMPONENT_COLOR
+	COMPONENT_COLOR,
+	LABEL_FONT_SIZE
 } from '/js/config.js';
 
 class Drawing {
@@ -275,6 +276,37 @@ export const notGate = (ctx, item) => {
 	ctx.fill();
 	ctx.stroke();
 };
+export const bufferGate = (ctx, item) => {
+	if (item.selected) {
+		ctx.strokeStyle = SELECTED_STROKE_COLOR;
+		ctx.fillStyle = SELECTED_FILL_COLOR;
+	} else {
+		ctx.strokeStyle = COMPONENT_LINE_COLOR;
+		ctx.fillStyle = COMPONENT_COLOR;
+	}
+	new Drawing()
+		.point('a', -120, -100)
+		.point('b', 120, 0)
+		.mirror('a', 'c', 'y')
+		.begin()
+		.move('a')
+		.line('b')
+		.line('c')
+		.close()
+		.fill()
+		.stroke()
+		.translate(0, 0)
+		.scale(0.11)
+		.draw(ctx);
+	// ctx.beginPath();
+	// ctx.arc(10, 0, 4.5, 3.141592653589793, 9.42477796076938);
+	// ctx.moveTo(-14.5, -9);
+	// ctx.lineTo(5.5, 0);
+	// ctx.lineTo(-14.5, 9);
+	// ctx.closePath();
+	// ctx.fill();
+	// ctx.stroke();
+};
 export const xorGate = (ctx, item) => {
 	if (item.selected) {
 		ctx.strokeStyle = SELECTED_STROKE_COLOR;
@@ -501,7 +533,8 @@ export const norGate = (ctx, item) => {
 	ctx.stroke();
 };
 export const component = (ctx, item) => {
-	if (item.selected) {
+	const {label} = item;
+	if (item.selected === true) {
 		ctx.strokeStyle = SELECTED_STROKE_COLOR;
 		ctx.fillStyle = SELECTED_FILL_COLOR;
 	} else {
@@ -513,4 +546,11 @@ export const component = (ctx, item) => {
 	ctx.rect(ax, ay, bx - ax, by - ay);
 	ctx.fill();
 	ctx.stroke();
+	if (label) {
+		ctx.fillStyle = '#fff';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.font = LABEL_FONT_SIZE + 'px monospace';
+		ctx.fillText(label, 0, 0);
+	}
 };

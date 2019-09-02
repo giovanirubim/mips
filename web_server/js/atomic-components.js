@@ -42,9 +42,82 @@ export class NotGate extends Component {
 		return this.inputChanged = inputChanged;
 	}
 	tic() {
-		if (this.inputChanged === 0) return 0;
 		const {workspace} = this;
 		workspace[1] = ~workspace[0];
+		return 0;
+	}
+}
+
+export class NotLGate extends Component {
+	constructor() {
+		super();
+		this.hitbox = [-15, -10, 15, 10];
+
+		const workspace = new Uint32Array(2);
+		const {buffer} = workspace;
+		this.workspace = workspace;
+
+		this.addIO(-20, 0, 'input', 'input');
+		const output = this.addIO(20, 0, 'output', new Conductor(32, buffer, 1));
+		output.conductor[0] = 1;
+
+		this.draw = Drawings.notGate;
+	}
+	clone() {
+		const item = new NotGate();
+		item.transform.set(this.transform);
+		return item;
+	}
+	readInputs() {
+		const {input, workspace} = this;
+		const val = input[0];
+		let inputChanged = 0;
+		if (workspace[0] !== val) {
+			inputChanged = 1;
+			workspace[0] = val;
+		}
+		return this.inputChanged = inputChanged;
+	}
+	tic() {
+		const {workspace} = this;
+		workspace[1] = (workspace[0] === 0)|0;
+		return 0;
+	}
+}
+
+export class BufferGate extends Component {
+	constructor() {
+		super();
+		this.hitbox = [-15, -10, 15, 10];
+
+		const workspace = new Uint32Array(2);
+		const {buffer} = workspace;
+		this.workspace = workspace;
+
+		this.addIO(-20, 0, 'input', 'input');
+		const output = this.addIO(20, 0, 'output', new Conductor(32, buffer, 1));
+		output.conductor[0] = 0;
+
+		this.draw = Drawings.bufferGate;
+	}
+	clone() {
+		const item = new BufferGate();
+		item.transform.set(this.transform);
+		return item;
+	}
+	readInputs() {
+		const {input, workspace} = this;
+		const val = input[0];
+		let inputChanged = 0;
+		if (workspace[0] !== val) {
+			inputChanged = 1;
+			workspace[0] = val;
+		}
+		return this.inputChanged = inputChanged;
+	}
+	tic() {
+		const {workspace} = this;
+		workspace[1] = workspace[0];
 		return 0;
 	}
 }
@@ -82,7 +155,6 @@ export class XorGate extends Component {
 		return this.inputChanged = inputChanged;
 	}
 	tic() {
-		if (this.inputChanged === 0) return 0;
 		const {workspace} = this;
 		workspace[2] = workspace[0] ^ workspace[1];
 		return 0;
@@ -121,7 +193,6 @@ export class AndGate extends Component {
 		return this.inputChanged = inputChanged;
 	}
 	tic() {
-		if (this.inputChanged === 0) return 0;
 		const {workspace} = this;
 		workspace[2] = workspace[0] & workspace[1];
 		return 0;
@@ -161,7 +232,6 @@ export class NandGate extends Component {
 		return this.inputChanged = inputChanged;
 	}
 	tic() {
-		if (this.inputChanged === 0) return 0;
 		const {workspace} = this;
 		workspace[2] = ~(workspace[0] & workspace[1]);
 		return 0;
@@ -201,7 +271,6 @@ export class NorGate extends Component {
 		return this.inputChanged = inputChanged;
 	}
 	tic() {
-		if (this.inputChanged === 0) return 0;
 		const {workspace} = this;
 		workspace[2] = ~(workspace[0] | workspace[1]);
 		return 0;
@@ -240,7 +309,6 @@ export class OrGate extends Component {
 		return this.inputChanged = inputChanged;
 	}
 	tic() {
-		if (this.inputChanged === 0) return 0;
 		const {workspace} = this;
 		workspace[2] = workspace[0] | workspace[1];
 		return 0;

@@ -1,6 +1,7 @@
 import { GRID } from '/js/config.js';
 import { Coord } from '/js/transform-2d.js';
 import { Circuit, OuterIOPoint } from '/js/circuit.js';
+import * as WordHandler from '/js/word-handlers.js';
 import * as AtomicComponent from '/js/atomic-components.js';
 import * as CustomComponent from '/js/custom-components.js';
 const getReachedComponents = (root, visited) => {
@@ -60,18 +61,18 @@ const organizeIOPoints = points => {
 			queues[3].push(point);
 		}
 	});
-	const calcLength = n => (n + 2 - (n&1))*GRID;
-	queues[0].sort((a, b) => a.coord.x - b.coord.x);
-	queues[1].sort((a, b) => a.coord.y - b.coord.y);
-	queues[2].sort((a, b) => a.coord.x - b.coord.x);
-	queues[3].sort((a, b) => a.coord.y - b.coord.y);
+	const calcLength = n => (n + 1)*GRID;
+	queues[0].sort((a, b) => a.coord[0] - b.coord[0]);
+	queues[1].sort((a, b) => a.coord[1] - b.coord[1]);
+	queues[2].sort((a, b) => a.coord[0] - b.coord[0]);
+	queues[3].sort((a, b) => a.coord[1] - b.coord[1]);
 	sx = Math.max(queues[0].length, queues[2].length);
 	sy = Math.max(queues[1].length, queues[3].length);
 	sx = calcLength(sx);
 	sy = calcLength(sy);
 	return { queues, sx, sy };
 };
-export const encodeCircuit = (circuit, className) => {
+export const encodeCircuit = (circuit, className, label) => {
 	const toClass = className !== undefined;
 	let code = '';
 	let tabs = '';
@@ -118,6 +119,9 @@ export const encodeCircuit = (circuit, className) => {
 		add('this.circuit = circuit;');
 		add('this.inputLayer = inputLayer;');
 		add('this.nonInput = nonInput;');
+		if (label) {
+			add(`this.label = ${ JSON.stringify(label) };`);
+		}
 	}
 	const visited = {};
 	for (let i=iopoints.length; i--;) {
@@ -159,8 +163,8 @@ export const encodeCircuit = (circuit, className) => {
 	}
 	if (toClass) {
 		const { queues, sx, sy } = organizeIOPoints(iopoints);
-		const x0 = -sx*0.5;
-		const y0 = -sy*0.5;
+		const x0 = - Math.floor(sx*0.5/GRID)*GRID;
+		const y0 = - Math.floor(sy*0.5/GRID)*GRID;
 		const x1 = x0 + sx;
 		const y1 = y0 + sy;
 		const size = [sx, sy];
@@ -208,6 +212,14 @@ export const decodeCircuit = str => {
 	for (let name in AtomicComponent) {
 		names.push(name);
 		classes.push(AtomicComponent[name]);
+	}
+	for (let name in CustomComponent) {
+		names.push(name);
+		classes.push(CustomComponent[name]);
+	}
+	for (let name in WordHandler) {
+		names.push(name);
+		classes.push(WordHandler[name]);
 	}
 	let call;
 	eval(`call = (circuit, ${ names.join(', ') }) => {${ str }\nreturn circuit;};`);
