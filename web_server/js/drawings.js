@@ -542,8 +542,10 @@ export const component = (ctx, item) => {
 		ctx.fillStyle = COMPONENT_COLOR;
 	}
 	const [ax, ay, bx, by] = item.hitbox;
+	const sx = bx - ax;
+	const sy = by - ay;
 	ctx.beginPath();
-	ctx.rect(ax, ay, bx - ax, by - ay);
+	ctx.rect(ax, ay, sx, sy);
 	ctx.fill();
 	ctx.stroke();
 	if (label) {

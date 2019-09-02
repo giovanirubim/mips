@@ -8,6 +8,14 @@ export class IOPoint extends Point {
 	constructor(type) {
 		super();
 		this.type = type;
+		this.pair = null;
+		this.label = '';
+		this.labelProp = {
+			align: 'left',
+			baseline: 'top',
+			dx: 0.25,
+			dy: 0.25
+		};
 	}
 }
 
@@ -151,6 +159,8 @@ export class Circuit {
 		arrayRemove(this.wires, wire);
 		this.hiddenWires.push(wire);
 		wire.hidden = true;
+		a.pair = b;
+		b.pair = a;
 		return wire;
 	}
 	resetConductors(rootPoint) {

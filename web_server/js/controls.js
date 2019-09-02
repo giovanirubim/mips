@@ -607,12 +607,16 @@ addKeyHandler('0', 1, 0, () => {
 });
 addKeyHandler('i', 0, 0, () => {
 	const [x, y] = Shared.getCursor();
-	Shared.getCircuit().createIOPoint('input', x, y);
+	const point = Shared.getCircuit().createIOPoint('input', x, y);
+	clearSelection();
+	addToSelection(point);
 	Render.drawCircuit();
 });
 addKeyHandler('o', 0, 0, () => {
 	const [x, y] = Shared.getCursor();
-	Shared.getCircuit().createIOPoint('output', x, y);
+	const point = Shared.getCircuit().createIOPoint('output', x, y);
+	clearSelection();
+	addToSelection(point);
 	Render.drawCircuit();
 });
 const animateCircuitRotation = (cx, cy, array) => {
@@ -931,4 +935,34 @@ addKeyHandler('+', 0, 1, () => {
 });
 addKeyHandler('-', 0, 1, () => {
 	incInnerSpace('y', -1);
+});
+addKeyHandler('t', 0, 1, () => {
+	if (selection.length !== 1) return;
+	const item = selection[0];
+	let label = prompt('Label');
+	if (label) label = label.trim();
+	if (!label) return;
+	item.label = label;
+});
+addKeyHandler('r', 0, 1, () => {
+	for (let i=selection.length; i--;) {
+		const point = selection[i];
+		if ((point instanceof IOPoint) === false) {
+			continue;
+		}
+		const {labelProp} = point;
+		const {dx, dy} = labelProp;
+		labelProp.dx = dy;
+		labelProp.dy = - dx;
+		if (labelProp.dx > 0) {
+			labelProp.align = 'left';
+		} else {
+			labelProp.align = 'right';
+		}
+		if (labelProp.dy > 0) {
+			labelProp.baseline = 'top';
+		} else {
+			labelProp.baseline = 'bottom';
+		}
+	}
 });

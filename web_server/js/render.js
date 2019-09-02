@@ -17,7 +17,8 @@ import {
 	COMPONENT_LINE_COLOR,
 	COMPONENT_COLOR,
 	CURSOR_COLOR,
-	COMPONENT_LINE_WIDTH
+	COMPONENT_LINE_WIDTH,
+	LABEL_FONT_SIZE
 } from '/js/config.js';
 
 let ctx = null;
@@ -183,6 +184,18 @@ const drawOuterPoint = point => {
 	ctx.beginPath();
 	ctx.arc(0, 0, IO_POINT_RADIUS, ROT_0 + ROT_1*0.25, ROT_4 + ROT_1*0.25);
 	ctx.stroke();
+	const {pair} = point;
+	if (pair !== null) {
+		const {label} = pair;
+		if (label !== '') {
+			const {align, baseline, dx, dy} = pair.labelProp;
+			ctx.textBaseline = baseline;
+			ctx.textAlign = align;
+			ctx.fillStyle = '#fff';
+			ctx.font = LABEL_FONT_SIZE + 'px monospace';
+			ctx.fillText(label, GRID*dx, GRID*dy);
+		}
+	}
 	ctx.restore();
 };
 const drawInnerPoint = point => {
@@ -203,6 +216,15 @@ const drawInnerPoint = point => {
 	ctx.arc(x, y, POINT_RADIUS, ROT_0 + ROT_1*0.25, ROT_4 + ROT_1*0.25);
 	ctx.fill();
 	ctx.setLineDash([]);
+	const {label} = point;
+	if (label !== '') {
+		const {align, baseline, dx, dy} = point.labelProp;
+		ctx.textBaseline = baseline;
+		ctx.textAlign = align;
+		ctx.fillStyle = '#fff';
+		ctx.font = LABEL_FONT_SIZE + 'px monospace';
+		ctx.fillText(label, x + GRID*dx, y + GRID*dy);
+	}
 };
 const drawHitbox = item => {
 	const {hitbox} = item;

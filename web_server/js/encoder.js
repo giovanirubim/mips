@@ -127,9 +127,18 @@ export const encodeCircuit = (circuit, className, label) => {
 	for (let i=iopoints.length; i--;) {
 		const point = iopoints[i];
 		const id = giveId(point);
-		const {type} = point;
+		const {type, label} = point;
 		point.pos(coord);
-		add(`const ${ id } = circuit.createIOPoint('${ type }', ${ coord.join(', ') });`);
+		const args = `'${ type }', ${ coord.join(', ') }`;
+		add(`const ${ id } = circuit.createIOPoint(${ args });`);
+		if (label !== '') {
+			add(`${ id }.label = ${ JSON.stringify(label) };`);
+			const {labelProp} = point;
+			for (let att in labelProp) {
+				const value = labelProp[att];
+				add(`${ id }.labelProp.${ att } = ${ JSON.stringify(value) };`);
+			}
+		}
 		if (toClass && type === 'input') {
 			getReachedComponents(point, visited);
 		}
