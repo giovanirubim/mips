@@ -551,6 +551,8 @@ export const component = (ctx, item) => {
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 		ctx.font = LABEL_FONT_SIZE + 'px monospace';
-		ctx.fillText(label, 0, 0);
+		const x = (ax + bx)*0.5;
+		const y = (ay + by)*0.5;
+		ctx.fillText(label, x, y);
 	}
 };

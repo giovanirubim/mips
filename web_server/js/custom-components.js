@@ -16,29 +16,29 @@ export class BitAdder extends ComposedComponent {
 		this.inputLayer = inputLayer;
 		this.nonInput = nonInput;
 		this.label = "bit-adder";
-		const _1 = circuit.createIOPoint('output', -200, -80);
-		const _2 = circuit.createIOPoint('output', 60, 180);
+		const _1 = circuit.createIOPoint('input', -40, -140);
+		const _2 = circuit.createIOPoint('input', 80, -140);
 		const _3 = circuit.createIOPoint('input', 160, -80);
-		const _4 = circuit.createIOPoint('input', 80, -140);
-		const _5 = circuit.createIOPoint('input', -40, -140);
-		const _6 = circuit.createPoint(100, 60);
-		const _7 = circuit.createPoint(-20, -100);
-		const _8 = circuit.createPoint(-20, -60);
-		const _9 = circuit.createPoint(-80, -60);
-		const _a = circuit.createPoint(-100, 60);
+		const _4 = circuit.createIOPoint('output', 60, 180);
+		const _5 = circuit.createIOPoint('output', -200, -80);
+		const _6 = circuit.createPoint(120, -80);
+		const _7 = circuit.createPoint(120, -40);
+		const _8 = circuit.createPoint(-40, 20);
+		const _9 = circuit.createPoint(40, 20);
+		const _a = circuit.createPoint(80, -80);
 		const _b = circuit.createPoint(80, 60);
-		const _c = circuit.createPoint(80, -80);
-		const _d = circuit.createPoint(40, 20);
-		const _e = circuit.createPoint(-40, 20);
-		const _f = circuit.createPoint(120, -40);
-		const _10 = circuit.createPoint(120, -80);
-		const _11 = new OrGate();
+		const _c = circuit.createPoint(-100, 60);
+		const _d = circuit.createPoint(-80, -60);
+		const _e = circuit.createPoint(-20, -60);
+		const _f = circuit.createPoint(-20, -100);
+		const _10 = circuit.createPoint(100, 60);
+		const _11 = new XorGate();
 		circuit.add(_11);
-		_11.transform.set(-1, 0, 0, -1, -120, -80);
-		nonInput.push(_11);
+		_11.transform.set(0, 1, -1, 0, 100, 0);
+		inputLayer.push(_11);
 		const _12 = new AndGate();
 		circuit.add(_12);
-		_12.transform.set(0, -1, 1, 0, -80, 0);
+		_12.transform.set(-1, 0, 0, -1, 40, -60);
 		inputLayer.push(_12);
 		const _13 = new XorGate();
 		circuit.add(_13);
@@ -46,46 +46,46 @@ export class BitAdder extends ComposedComponent {
 		inputLayer.push(_13);
 		const _14 = new AndGate();
 		circuit.add(_14);
-		_14.transform.set(-1, 0, 0, -1, 40, -60);
+		_14.transform.set(0, -1, 1, 0, -80, 0);
 		inputLayer.push(_14);
-		const _15 = new XorGate();
+		const _15 = new OrGate();
 		circuit.add(_15);
-		_15.transform.set(0, 1, -1, 0, 100, 0);
-		inputLayer.push(_15);
-		circuit.createWire(_1, _11.outerPoints[2]);
-		circuit.createWire(_6, _15.outerPoints[2]);
-		circuit.createWire(_b, _6);
-		circuit.createWire(_7, _11.outerPoints[1]);
-		circuit.createWire(_8, _7);
-		circuit.createWire(_14.outerPoints[2], _8);
-		circuit.createWire(_9, _12.outerPoints[2]);
-		circuit.createWire(_11.outerPoints[0], _9);
-		circuit.createWire(_a, _12.outerPoints[0]);
-		circuit.createWire(_b, _a);
-		circuit.createWire(_12.outerPoints[1], _e);
+		_15.transform.set(-1, 0, 0, -1, -120, -80);
+		nonInput.push(_15);
+		circuit.createWire(_6, _3);
+		circuit.createWire(_11.outerPoints[0], _7);
+		circuit.createWire(_7, _6);
+		circuit.createWire(_7, _12.outerPoints[0]);
+		circuit.createWire(_1, _8);
+		circuit.createWire(_8, _9);
+		circuit.createWire(_9, _13.outerPoints[1]);
+		circuit.createWire(_13.outerPoints[2], _4);
+		circuit.createWire(_2, _a);
+		circuit.createWire(_a, _11.outerPoints[1]);
+		circuit.createWire(_a, _12.outerPoints[1]);
 		circuit.createWire(_13.outerPoints[0], _b);
-		circuit.createWire(_c, _14.outerPoints[1]);
-		circuit.createWire(_c, _15.outerPoints[1]);
-		circuit.createWire(_4, _c);
-		circuit.createWire(_13.outerPoints[2], _2);
-		circuit.createWire(_d, _13.outerPoints[1]);
-		circuit.createWire(_e, _d);
-		circuit.createWire(_5, _e);
-		circuit.createWire(_f, _14.outerPoints[0]);
-		circuit.createWire(_f, _10);
-		circuit.createWire(_15.outerPoints[0], _f);
-		circuit.createWire(_10, _3);
-		const _16 = this.addIO(-20, -20, 'input');
-		circuit.createHiddenWire(_16, _5)
-		const _17 = this.addIO(0, -20, 'input');
-		circuit.createHiddenWire(_17, _4)
+		circuit.createWire(_14.outerPoints[1], _8);
+		circuit.createWire(_b, _c);
+		circuit.createWire(_c, _14.outerPoints[0]);
+		circuit.createWire(_15.outerPoints[0], _d);
+		circuit.createWire(_d, _14.outerPoints[2]);
+		circuit.createWire(_12.outerPoints[2], _e);
+		circuit.createWire(_e, _f);
+		circuit.createWire(_f, _15.outerPoints[1]);
+		circuit.createWire(_b, _10);
+		circuit.createWire(_10, _11.outerPoints[2]);
+		circuit.createWire(_5, _15.outerPoints[2]);
+		const _16 = this.addIO(0, -20, 'input');
+		circuit.createHiddenWire(_16, _1)
+		const _17 = this.addIO(20, -20, 'input');
+		circuit.createHiddenWire(_17, _2)
 		const _18 = this.addIO(40, 0, 'input');
 		circuit.createHiddenWire(_18, _3)
 		const _19 = this.addIO(0, 20, 'output');
-		circuit.createHiddenWire(_19, _2)
-		const _1a = this.addIO(-40, 0, 'output');
-		circuit.createHiddenWire(_1a, _1)
-		this.hitbox = [-34, -14, 34, 14];
+		circuit.createHiddenWire(_19, _4)
+		const _1a = this.addIO(-20, 0, 'output');
+		circuit.createHiddenWire(_1a, _5)
+		this.hitbox = [-14, -14, 34, 14];
 	}
 }
 export class Latch extends ComposedComponent {
