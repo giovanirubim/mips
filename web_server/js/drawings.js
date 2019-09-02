@@ -552,7 +552,8 @@ export const component = (ctx, item) => {
 		ctx.fillStyle = '#fff';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-		ctx.font = LABEL_FONT_SIZE + 'px monospace';
+		const min = sx*1.5/label.length;
+		ctx.font = Math.min(LABEL_FONT_SIZE, min) + 'px monospace';
 		const x = (ax + bx)*0.5;
 		const y = (ay + by)*0.5;
 		ctx.fillText(label, x, y);

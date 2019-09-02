@@ -1,4 +1,4 @@
-import { bindCanvas, bindWindow } from '/js/eventHandler.js';
+import { bindCanvas, bindWindow } from '/js/event-handler.js';
 import { decodeCircuit } from '/js/encoder.js';
 import { Circuit } from '/js/circuit.js';
 import * as Shared from '/js/shared.js';

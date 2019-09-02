@@ -9,6 +9,6 @@ export const copyToClipboard = str => {
 		document.execCommand('copy');
 		setTimeout(() => {
 			textarea.remove();
-		}, 0);
-	}, 0);
+		}, 100);
+	}, 100);
 };

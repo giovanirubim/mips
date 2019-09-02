@@ -61,7 +61,7 @@ const organizeIOPoints = points => {
 			queues[3].push(point);
 		}
 	});
-	const calcLength = n => (n + 1)*GRID;
+	const calcLength = n => Math.max(n + 1, 2)*GRID;
 	queues[0].sort((a, b) => a.coord[0] - b.coord[0]);
 	queues[1].sort((a, b) => a.coord[1] - b.coord[1]);
 	queues[2].sort((a, b) => a.coord[0] - b.coord[0]);
