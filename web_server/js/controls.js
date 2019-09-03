@@ -340,6 +340,70 @@ const saveToStorage = () => {
 	const code = Encoder.encodeCircuit(circuit);
 	localStorage.setItem('code', code);
 };
+const animateViewRotation = mouseInfo => {
+	let zoom = mouseInfo.zoom.clone();
+	const ini = new Date();
+	const ang = mouseInfo.scroll < 0 ? Math.PI*0.5 : - Math.PI*0.5;
+	animation = setInterval(() => {
+		let t = (new Date() - ini)/ANIMATION_ROTATION_DURATION;
+		if (t >= 1) {
+			t = 1;
+		} else {
+			t = (1 - Math.cos(t*Math.PI))*0.5;
+		}
+		Render.setZoom(zoom);
+		Render.rotateView(t*ang);
+		Render.drawCircuit();
+		if (t === 1) {
+			clearInterval(animation);
+			animation = null;
+			eventEnded();
+		}
+	}, 0);
+};
+const centralizeView = () => {
+	const circuit = Shared.getCircuit();
+	const pos_a = Coord();
+	const pos_b = Coord();
+	const {components, iopoints, points} = circuit;
+	let
+		x0 = Infinity,
+		y0 = Infinity,
+		x1 = -Infinity,
+		y1 = -Infinity;
+	for (let i=components.length; i--;) {
+		components[i].getHitbox(pos_a, pos_b);
+		const [ax, ay] = pos_a;
+		const [bx, by] = pos_b;
+		x0 = Math.min(ax, x0);
+		y0 = Math.min(ay, y0);
+		x1 = Math.max(bx, x1);
+		y1 = Math.max(by, y1);
+	}
+	for (let i=points.length; i--;) {
+		points[i].pos(pos_a);
+		const [x, y] = pos_a;
+		x0 = Math.min(x, x0);
+		y0 = Math.min(y, y0);
+		x1 = Math.max(x, x1);
+		y1 = Math.max(y, y1);
+	}
+	for (let i=iopoints.length; i--;) {
+		iopoints[i].pos(pos_a);
+		const [x, y] = pos_a;
+		x0 = Math.min(x, x0);
+		y0 = Math.min(y, y0);
+		x1 = Math.max(x, x1);
+		y1 = Math.max(y, y1);
+	}
+	const {x, y, sx, sy} = Shared.getViewport();
+	pos_a[0] = (x0 + x1)*0.5;
+	pos_a[1] = (y0 + y1)*0.5;
+	Render.projectPosition(pos_a);
+	let dx = sx*0.5 - pos_a[0];
+	let dy = sy*0.5 - pos_a[1];
+	Render.translateView(dx, dy);
+};
 export const handleMousedown = mouseInfo => {
 	if (eventState !== ES_NONE) return;
 	setEvent(ES_CLICKED);
@@ -506,27 +570,6 @@ export const handleMouseup = mouseInfo => {
 	}
 	eventEnded();
 };
-const animateViewRotation = mouseInfo => {
-	let zoom = mouseInfo.zoom.clone();
-	const ini = new Date();
-	const ang = mouseInfo.scroll < 0 ? Math.PI*0.5 : - Math.PI*0.5;
-	animation = setInterval(() => {
-		let t = (new Date() - ini)/ANIMATION_ROTATION_DURATION;
-		if (t >= 1) {
-			t = 1;
-		} else {
-			t = (1 - Math.cos(t*Math.PI))*0.5;
-		}
-		Render.setZoom(zoom);
-		Render.rotateView(t*ang);
-		Render.drawCircuit();
-		if (t === 1) {
-			clearInterval(animation);
-			animation = null;
-			eventEnded();
-		}
-	}, 0);
-};
 export const handleScroll = mouseInfo => {
 	if (eventState !== ES_NONE) return;
 	if (mouseInfo.ctrl === true && mouseInfo.shift === true) {
@@ -538,7 +581,7 @@ export const handleScroll = mouseInfo => {
 		const dx = mx - (x + sx/2);
 		const dy = my - (y + sy/2);
 		Render.translateView(-dx, -dy);
-		Render.scaleView(1 - mouseInfo.scroll*0.001);
+		Render.scaleView(1 - mouseInfo.scroll*0.02);
 		Render.translateView(dx, dy);
 		Render.drawCircuit();
 	}
@@ -551,6 +594,7 @@ export const handleDblclick = mouseInfo => {
 	if (component !== null && component.circuit) {
 		circuits.push(circuit);
 		Shared.setCircuit(component.circuit);
+		centralizeView();
 	} else {
 		x = Math.round(x/GRID)*GRID;
 		y = Math.round(y/GRID)*GRID;
@@ -837,6 +881,7 @@ addKeyHandler('pageup', 0, 0, () => {
 	const index = circuits.length - 1;
 	const circuit = circuits.splice(index, 1)[0];
 	Shared.setCircuit(circuit);
+	centralizeView();
 });
 addKeyHandler('f1', 0, 0, () => {
 	console.log(selection[0]);
@@ -966,3 +1011,4 @@ addKeyHandler('r', 0, 1, () => {
 		}
 	}
 });
+addKeyHandler('c', 0, 0, centralizeView);

@@ -29,9 +29,10 @@ window.addEventListener('load', () => {
 	const update = () => {
 		circuit.tic();
 		Render.drawCircuit();
-		requestAnimationFrame(update);
+		// requestAnimationFrame(update);
 	};
-	requestAnimationFrame(update);
+	// requestAnimationFrame(update);
+	setInterval(update, 250);
 	bindWindow();
 	window.addEventListener('resize', updateCanvasSize);
 });
