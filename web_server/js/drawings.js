@@ -5,6 +5,7 @@ import {
 	COMPONENT_COLOR,
 	LABEL_FONT_SIZE
 } from '/js/config.js';
+import { to8Hex } from '/js/utils.js';
 
 class Drawing {
 	constructor() {
@@ -558,4 +559,32 @@ export const component = (ctx, item) => {
 		const y = (ay + by)*0.5;
 		ctx.fillText(label, x, y);
 	}
+};
+export const monitor = (ctx, item) => {
+	component(ctx, item);
+	const ax = -35;
+	const ay = -35;
+	const sx = 70;
+	const sy = 70;
+	const padding = sy*0.075;
+	ctx.fillStyle = '#111';
+	const n = 3;
+	const cell_sx = sx - padding*2;
+	const cell_sy = (sy - padding*(n + 1))/n;
+	for (let i=n; i--;) {
+		const y = ay + (i + 1)*padding + i*cell_sy;
+		ctx.fillRect(ax + padding, y, cell_sx, cell_sy);
+	}
+	ctx.font = cell_sx/7 + 'px monospace';
+	ctx.textBaseline = 'middle';
+	ctx.textAlign = 'center';
+	const unsigned = item.input[0];
+	const signed = unsigned|0;
+	let hex = 
+	ctx.fillStyle = '#0f7';
+	ctx.fillText(signed, 0, ay + padding + cell_sy*0.5);
+	ctx.fillStyle = '#55f';
+	ctx.fillText(unsigned, 0, ay + padding*2 + cell_sy*1.5);
+	ctx.fillStyle = '#f70';
+	ctx.fillText(to8Hex(unsigned), 0, ay + padding*3 + cell_sy*2.5);
 };

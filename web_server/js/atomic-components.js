@@ -3,11 +3,6 @@ import {
 	Point,
 	Wire
 } from '/js/conduction.js';
-import {
-	IOPoint,
-	InnerIOPoint,
-	OuterIOPoint,
-} from '/js/circuit.js';
 import { Component } from '/js/component.js'
 import * as Drawings from '/js/drawings.js';
 
@@ -311,6 +306,30 @@ export class OrGate extends Component {
 	tic() {
 		const {workspace} = this;
 		workspace[2] = workspace[0] | workspace[1];
+		return 0;
+	}
+}
+
+export class Monitor extends Component {
+	constructor() {
+		super();
+		this.addIO(0, 40, 'input', 'input');
+		this.hitbox = [-35, -35, 35, 35];
+
+		const workspace = new Uint32Array(1);
+		const {buffer} = workspace;
+		this.workspace = workspace;
+
+		this.draw = Drawings.monitor;
+	}
+	readInputs() {
+		const {input, workspace} = this;
+		const val = input[0];
+		const inputChanged = (val !== workspace[0])|0;
+		workspace[0] = val;
+		return this.inputChanged = inputChanged;
+	}
+	tic() {
 		return 0;
 	}
 }

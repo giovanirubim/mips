@@ -32,3 +32,8 @@ export const lineDistance = (x, y, ax, ay, bx, by) => {
 	const c = (b_sqr - d_sqr - a_sqr)/(d+d);
 	return Math.sqrt(a_sqr - c*c);
 };
+export const to8Hex = val => {
+	val = val.toString(16);
+	while (val.length < 8) val = '0' + val;
+	return val;
+};
